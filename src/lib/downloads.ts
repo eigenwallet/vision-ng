@@ -367,12 +367,21 @@ function createSignatureLink(signatureUrl: string): string {
   return `<a href="${signatureUrl}" style="display: inline-flex; align-items: center;">signature${DOWNLOAD_ICON_SMALL}</a>`;
 }
 
+function getArchType(asset: DownloadAsset): 'x86_64' | 'arm64' | '' {
+  const arch = asset.architecture.toLowerCase();
+  if (arch.includes('intel') || arch.includes('x86_64')) return 'x86_64';
+  if (arch.includes('silicon') || arch.includes('arm64') || arch.includes('aarch64')) return 'arm64';
+  return '';
+}
+
 function generateAssetRow(asset: DownloadAsset): string {
   const fileLink = createFileLink(asset);
   const signatureLink = createSignatureLink(asset.signatureUrl);
+  const archType = getArchType(asset);
+  const assetType = asset.name.toLowerCase().replace(/\s+/g, '-');
 
   return `
-    <tr>
+    <tr data-platform="${asset.platform.toLowerCase()}" data-arch="${archType}" data-type="${assetType}">
       <td>${asset.architecture}</td>
       <td>${fileLink}</td>
       <td>${signatureLink}</td>

@@ -78,16 +78,19 @@ const downloadUrls = await getQuickDownloadUrls();
         <a 
           id="downloadBtn" 
           href="/download" 
-          class="inline-flex items-center gap-3 bg-[#f7a41d] hover:bg-[#e5941a] text-black font-bold py-4 px-8 text-xl transition-colors shadow-md hover:shadow-lg"
+          class="inline-flex items-center justify-center gap-3 bg-[#f7a41d] hover:bg-[#ffb732] text-black font-bold py-4 px-16 text-2xl transition-all duration-200 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 hover:translate-x-[-1px]"
           data-url-windows={downloadUrls.windows}
           data-url-macos-silicon={downloadUrls.macosSilicon}
           data-url-macos-intel={downloadUrls.macosIntel}
           data-url-linux={downloadUrls.linux}
         >
           <span>Download</span>
-          <span id="osIcon"></span>
+          <span id="osIcon" class="inline-flex items-center"></span>
         </a>
-        <a href="/download" class="text-sm text-[#888] hover:text-[#f7a41d] transition-colors">All downloads →</a>
+        <div class="flex gap-4">
+          <a href="/download" class="text-sm text-[#888] hover:text-[#f7a41d] transition-colors">All downloads →</a>
+          <a href="https://github.com/eigenwallet" target="_blank" rel="noopener noreferrer" class="text-sm text-[#888] hover:text-[#f7a41d] transition-colors inline-flex items-center gap-1">Source code <img src="/imgs/github.svg" width="14" height="14" alt="GitHub" class="invert opacity-60" /></a>
+        </div>
       </div>
     </div>
   </section>
@@ -151,31 +154,17 @@ const downloadUrls = await getQuickDownloadUrls();
     // Start auto-slide
     resetTimer();
 
+    import { detectOS, isSiliconMac } from '../lib/os-detection';
+
     // OS Detection for download button
     const downloadBtn = document.getElementById('downloadBtn') as HTMLAnchorElement;
     const osIcon = document.getElementById('osIcon');
 
     const icons = {
-      windows: '<img src="/icons/os-windows.svg" width="20" height="20" alt="Windows" />',
-      macos: '<img src="/icons/os-macos.svg" width="20" height="20" alt="macOS" />',
-      linux: '<img src="/icons/os-linux.svg" width="20" height="20" alt="Linux" />'
+      windows: '<img src="/icons/os-windows.svg" width="32" height="32" style="min-width: 32px; min-height: 32px; display: block;" alt="Windows" />',
+      macos: '<img src="/icons/os-macos.svg" width="32" height="32" style="min-width: 32px; min-height: 32px; display: block;" alt="macOS" />',
+      linux: '<img src="/icons/os-linux.svg" width="32" height="32" style="min-width: 32px; min-height: 32px; display: block;" alt="Linux" />'
     };
-
-    function detectOS(): 'windows' | 'macos' | 'linux' | 'unknown' {
-      const ua = navigator.userAgent.toLowerCase();
-      const platform = (navigator as any).userAgentData?.platform?.toLowerCase() || navigator.platform?.toLowerCase() || '';
-      
-      if (platform.includes('win') || ua.includes('windows')) return 'windows';
-      if (platform.includes('mac') || ua.includes('mac')) return 'macos';
-      if (platform.includes('linux') || ua.includes('linux')) return 'linux';
-      return 'unknown';
-    }
-
-    function isSiliconMac(): boolean {
-      const ua = navigator.userAgent;
-      return /arm64|aarch64/i.test(ua) || 
-             ((navigator as any).userAgentData?.architecture === 'arm');
-    }
 
     if (downloadBtn) {
       const os = detectOS();

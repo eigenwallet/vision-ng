@@ -4,10 +4,14 @@ import { getCache, setCache } from './cache';
 
 const LIQUIDITY_DAILY_API_URL = 'https://api.unstoppableswap.net/api/liquidity-daily';
 const LIST_API_URL = 'https://api.unstoppableswap.net/api/list';
+const PROVIDER_QUOTE_STATS_API_URL = 'https://api.unstoppableswap.net/api/provider-quote-stats';
+const PROVIDER_DAILY_SWAP_BOUNDS_API_URL = 'https://api.unstoppableswap.net/api/provider-daily-swap-bounds';
 const CACHE_KEY = 'liquidity-daily';
 const OFFERS_CACHE_KEY = 'offers-list';
+const PROVIDERS_CACHE_KEY = 'provider-quote-stats';
+const PROVIDER_BOUNDS_CACHE_KEY = 'provider-daily-swap-bounds';
 
-const FALLBACK_SVG = `<svg width="800" height="200" viewBox="0 0 800 200">
+const FALLBACK_SVG = `<svg viewBox="0 0 800 200" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto; display:block;">
   <text x="400" y="100" text-anchor="middle" fill="#666">No data available</text>
 </svg>`;
 
@@ -27,6 +31,23 @@ export interface Offer {
   minSwapAmount: number; // in satoshis
   maxSwapAmount: number; // in satoshis
   testnet: boolean;
+}
+
+export interface ProviderQuoteStats {
+  peer_id: string;
+  multi_address: string;
+  max_max_swap_amount: number; // in satoshis
+  min_min_swap_amount: number; // in satoshis
+  online_days: number;
+  age_days: number;
+  last_seen_ago_days: number;
+}
+
+export interface ProviderDailySwapBounds {
+  day: string; // YYYY-MM-DD format
+  peer_id: string;
+  daily_max_max_swap_amount: number; // in satoshis
+  daily_min_min_swap_amount: number; // in satoshis
 }
 
 const SATOSHIS_PER_BTC = 100000000;
@@ -146,7 +167,11 @@ async function generateLiquidityChart(liquidityData: LiquidityDayData[]): Promis
     const vegaSpec = vl.compile(spec).spec;
     const view = new vega.View(vega.parse(vegaSpec), { renderer: 'none' });
     const svg = await view.toSVG();
-    return svg.replace('<svg', '<svg style="max-width: 100%; height: auto;"');
+    // Remove fixed width/height and make responsive using viewBox
+    return svg
+      .replace(/\s*width="[^"]*"/, '')
+      .replace(/\s*height="[^"]*"/, '')
+      .replace('<svg', '<svg style="width: 100%; height: auto; display: block;"');
   } catch (error) {
     console.error('Failed to generate liquidity chart:', error);
     return FALLBACK_SVG;
@@ -225,4 +250,192 @@ export function btcToXmr(satoshis: number, priceInSatoshisPerXmr: number): strin
     return xmr.toFixed(2);
   }
   return xmr.toFixed(3);
+}
+
+/**
+ * Fetch provider quote stats from API with caching
+ */
+export async function fetchProviderStats(): Promise<ProviderQuoteStats[]> {
+  const cached = getCache<ProviderQuoteStats[]>(PROVIDERS_CACHE_KEY);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    console.log('Fetching provider stats from API...');
+    const response = await fetch(PROVIDER_QUOTE_STATS_API_URL);
+    
+    if (!response.ok) {
+      console.warn(`Provider stats API responded with status: ${response.status}`);
+      return [];
+    }
+
+    const data: ProviderQuoteStats[] = await response.json();
+    // Filter to providers with more than 1 online day
+    const filtered = data.filter(p => p.online_days > 1);
+    setCache(PROVIDERS_CACHE_KEY, filtered);
+    return filtered;
+  } catch (error) {
+    console.warn('Failed to fetch provider stats:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch provider daily swap bounds from API with caching
+ */
+export async function fetchProviderDailyBounds(): Promise<ProviderDailySwapBounds[]> {
+  const cached = getCache<ProviderDailySwapBounds[]>(PROVIDER_BOUNDS_CACHE_KEY);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    console.log('Fetching provider daily bounds from API...');
+    const response = await fetch(PROVIDER_DAILY_SWAP_BOUNDS_API_URL);
+    
+    if (!response.ok) {
+      console.warn(`Provider daily bounds API responded with status: ${response.status}`);
+      return [];
+    }
+
+    const data: ProviderDailySwapBounds[] = await response.json();
+    setCache(PROVIDER_BOUNDS_CACHE_KEY, data);
+    return data;
+  } catch (error) {
+    console.warn('Failed to fetch provider daily bounds:', error);
+    return [];
+  }
+}
+
+/**
+ * Get provider by peer ID
+ */
+export async function getProviderById(peerId: string): Promise<ProviderQuoteStats | null> {
+  const providers = await fetchProviderStats();
+  return providers.find(p => p.peer_id === peerId) || null;
+}
+
+/**
+ * Get historical bounds for a specific provider
+ */
+export async function getProviderHistoricalBounds(peerId: string): Promise<ProviderDailySwapBounds[]> {
+  const bounds = await fetchProviderDailyBounds();
+  return bounds
+    .filter(b => b.peer_id === peerId)
+    .sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime());
+}
+
+/**
+ * Format days ago into readable string
+ */
+export function formatDaysAgo(days: number | null | undefined): string {
+  if (days === null || days === undefined || Number.isNaN(days)) {
+    return 'Unknown';
+  }
+  if (days < 0) {
+    return 'Unknown';
+  }
+  if (days === 0) {
+    return 'today';
+  }
+  if (days === 1) {
+    return '1 day ago';
+  }
+  return `${days} days ago`;
+}
+
+/**
+ * Generate historical chart for a provider
+ */
+export async function generateProviderChart(peerId: string): Promise<string> {
+  const historicalData = await getProviderHistoricalBounds(peerId);
+  
+  if (historicalData.length === 0) {
+    return `<svg viewBox="0 0 800 200" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto; display:block;">
+      <text x="400" y="100" text-anchor="middle" fill="#666">No historical data available</text>
+    </svg>`;
+  }
+
+  const chartData = historicalData.map(d => ({
+    date: d.day,
+    maxSwap: d.daily_max_max_swap_amount / SATOSHIS_PER_BTC,
+  }));
+
+  const spec: vl.TopLevelSpec = {
+    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+    width: 750,
+    height: 400,
+    background: 'transparent',
+    padding: { left: 0, right: 0, top: 0, bottom: 0 },
+    data: { values: chartData },
+    layer: [
+      {
+        mark: {
+          type: 'area',
+          color: '#ff6b35',
+          opacity: 0.15,
+          line: false
+        },
+        encoding: {
+          x: {
+            title: null,
+            field: 'date',
+            type: 'temporal',
+            axis: {
+              format: '%b %d',
+              labelAngle: 0,
+              labelFontSize: 14,
+              labelColor: '#666',
+              tickColor: 'transparent',
+              domainColor: 'transparent',
+              grid: false
+            }
+          },
+          y: {
+            title: null,
+            field: 'maxSwap',
+            type: 'quantitative',
+            axis: {
+              labelFontSize: 14,
+              labelColor: '#666',
+              tickColor: 'transparent',
+              domainColor: 'transparent',
+              grid: false,
+              labelExpr: 'format(datum.value, ".3f") + " BTC"'
+            }
+          }
+        }
+      },
+      {
+        mark: {
+          type: 'line',
+          color: '#ff6b35',
+          strokeWidth: 2,
+          strokeCap: 'round',
+          strokeJoin: 'round'
+        },
+        encoding: {
+          x: { field: 'date', type: 'temporal' },
+          y: { field: 'maxSwap', type: 'quantitative' }
+        }
+      }
+    ]
+  };
+
+  try {
+    const vegaSpec = vl.compile(spec).spec;
+    const view = new vega.View(vega.parse(vegaSpec), { renderer: 'none' });
+    const svg = await view.toSVG();
+    // Remove fixed width/height and make responsive
+    return svg
+      .replace(/width="[^"]*"/, 'width="100%"')
+      .replace(/height="[^"]*"/, 'height="auto"')
+      .replace('<svg', '<svg style="display: block;"');
+  } catch (error) {
+    console.error('Failed to generate provider chart:', error);
+    return `<svg viewBox="0 0 800 200" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto; display:block;">
+      <text x="400" y="100" text-anchor="middle" fill="#666">Chart generation failed</text>
+    </svg>`;
+  }
 }

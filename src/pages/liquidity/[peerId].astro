@@ -1,0 +1,101 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { 
+  fetchProviderStats, 
+  getProviderById, 
+  generateProviderChart, 
+  satoshisToBtc, 
+  formatDaysAgo 
+} from '../../lib/liquidity';
+
+export async function getStaticPaths() {
+  const providers = await fetchProviderStats();
+  return providers.map((provider) => ({
+    params: { peerId: provider.peer_id },
+  }));
+}
+
+const { peerId } = Astro.params;
+const provider = await getProviderById(peerId);
+
+if (!provider) {
+  return Astro.redirect('/liquidity');
+}
+
+const chartSvg = await generateProviderChart(peerId);
+const maxSwapBtc = satoshisToBtc(provider.max_max_swap_amount);
+const minSwapBtc = satoshisToBtc(provider.min_min_swap_amount);
+const isOnline = provider.last_seen_ago_days !== undefined && provider.last_seen_ago_days < 1;
+---
+
+<Layout title={`Provider - eigenwallet`}>
+  <div class="mb-6">
+    <a href="/liquidity" class="text-[#888] hover:text-[#f7a41d] transition-colors text-sm">
+      ← Back to Liquidity
+    </a>
+  </div>
+
+  <div class="flex flex-col gap-6 mb-12">
+    <!-- Historical Chart -->
+    <div class="border border-[#333] bg-[#1e1e1e]">
+      <div class="border-b border-[#333] px-6 py-3 flex items-center justify-between">
+        <span class="text-sm font-medium text-[#eee]">Historical Max Swap</span>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-0.5 bg-[#ff6b35]"></div>
+          <span class="text-xs text-[#888]">Maximum Swap</span>
+        </div>
+      </div>
+      <div class="p-4 flex items-center justify-center w-full">
+        <div class="chart-responsive">
+          <Fragment set:html={chartSvg} />
+        </div>
+      </div>
+    </div>
+
+    <!-- Provider Info -->
+    <div class="border border-[#333] bg-[#1e1e1e]">
+      <div class="border-b border-[#333] px-6 py-3">
+        <span class="text-sm font-medium text-[#eee]">Provider Details</span>
+      </div>
+      <table class="w-full">
+        <tbody class="divide-y divide-[#333]">
+          <tr>
+            <td class="px-6 py-3 text-[#888] text-sm">Public Key</td>
+            <td class="px-6 py-3 text-[#eee] font-mono text-xs break-all text-right">{provider.peer_id}</td>
+          </tr>
+          <tr>
+            <td class="px-6 py-3 text-[#888] text-sm">Address</td>
+            <td class="px-6 py-3 text-[#eee] font-mono text-xs break-all text-right">{provider.multi_address}</td>
+          </tr>
+          <tr>
+            <td class="px-6 py-3 text-[#888] text-sm">Online Days</td>
+            <td class="px-6 py-3 text-[#4ade80] font-medium text-right">{provider.online_days} days</td>
+          </tr>
+          <tr>
+            <td class="px-6 py-3 text-[#888] text-sm">First Seen</td>
+            <td class="px-6 py-3 text-[#eee] text-right">{formatDaysAgo(provider.age_days)}</td>
+          </tr>
+          <tr>
+            <td class="px-6 py-3 text-[#888] text-sm">Last Seen</td>
+            <td class="px-6 py-3 text-right">
+              {isOnline ? (
+                <span class="text-[#4ade80] font-medium">Online</span>
+              ) : (
+                <span class="text-[#eee]">{formatDaysAgo(provider.last_seen_ago_days)}</span>
+              )}
+            </td>
+          </tr>
+          <tr>
+            <td class="px-6 py-3 text-[#888] text-sm">Largest Offer (all time)</td>
+            <td class="px-6 py-3 text-[#f7a41d] font-medium font-mono text-right">{maxSwapBtc} BTC</td>
+          </tr>
+          <tr>
+            <td class="px-6 py-3 text-[#888] text-sm">Smallest Offer (all time)</td>
+            <td class="px-6 py-3 text-[#f7a41d] font-medium font-mono text-right">{minSwapBtc} BTC</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</Layout>
+

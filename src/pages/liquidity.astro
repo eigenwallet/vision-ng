@@ -1,9 +1,24 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getLiquidityData, fetchOffers, satoshisToBtc, btcToXmr, formatPrice } from '../lib/liquidity';
+import { getLiquidityData, fetchOffers, fetchProviderStats, satoshisToBtc, btcToXmr, formatPrice, formatDaysAgo } from '../lib/liquidity';
 
 const { chartSvg } = await getLiquidityData();
 const offers = await fetchOffers();
+const providers = await fetchProviderStats();
+
+// Sort providers: by last seen (ascending), then by online days when both are "Recently"
+const sortedProviders = [...providers].sort((a, b) => {
+  const aLastSeen = a.last_seen_ago_days ?? Infinity;
+  const bLastSeen = b.last_seen_ago_days ?? Infinity;
+  
+  // Sort by last seen ascending (most recent first)
+  if (aLastSeen !== bLastSeen) {
+    return aLastSeen - bLastSeen;
+  }
+  
+  // When last seen is equal, sort by online days descending
+  return b.online_days - a.online_days;
+});
 ---
 
 <Layout title="Network Liquidity - eigenwallet">
@@ -12,7 +27,9 @@ const offers = await fetchOffers();
     <div class="flex-1 min-w-0">
       <div class="border border-[#333] bg-[#1e1e1e] h-full flex flex-col">
         <div class="p-4 flex-1">
-          <Fragment set:html={chartSvg} />
+          <div class="chart-responsive">
+            <Fragment set:html={chartSvg} />
+          </div>
         </div>
         <div class="border-t border-[#333] py-2 text-center">
           <span class="text-sm font-medium text-[#eee]">Network Liquidity</span>
@@ -22,10 +39,7 @@ const offers = await fetchOffers();
 
     <!-- Current Offers -->
     <div class="flex-1 min-w-0">
-      <div class="border border-[#444] bg-[#1a1a1a] h-full flex flex-col">
-        <div class="border-b border-[#333] px-6 py-3">
-          <span class="text-sm font-medium text-[#eee]">Offers</span>
-        </div>
+      <div class="border border-[#333] bg-[#1e1e1e] h-full flex flex-col">
         <div class="flex-1 overflow-auto divide-y divide-[#333]">
           {offers.length > 0 ? (
             offers.map((offer) => (
@@ -59,7 +73,74 @@ const offers = await fetchOffers();
             </div>
           )}
         </div>
+        <div class="border-t border-[#333] py-2 text-center">
+          <span class="text-sm font-medium text-[#eee]">Offers</span>
+        </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Providers Table -->
+  <div class="border border-[#333] bg-[#1e1e1e] mb-12 overflow-hidden">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr class="bg-[#252525]">
+            <th colspan="5" class="px-6 py-2 text-left text-sm font-medium text-[#eee]">Market Makers</th>
+          </tr>
+          <tr class="border-b border-[#333] bg-[#252525]">
+            <th class="px-6 py-3 text-left text-sm font-medium text-[#888]">Address</th>
+            <th class="px-6 py-3 text-right text-sm font-medium text-[#888]">Online Days</th>
+            <th class="px-6 py-3 text-right text-sm font-medium text-[#888]">Max Swap</th>
+            <th class="px-6 py-3 text-right text-sm font-medium text-[#888]">Min Swap</th>
+            <th class="px-6 py-3 text-right text-sm font-medium text-[#888]">Last Seen</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[#333]">
+          {sortedProviders.length > 0 ? (
+            sortedProviders.map((provider, index) => {
+              const displayAddress = provider.multi_address.length > 35 
+                ? provider.multi_address.substring(0, 35) + '...'
+                : provider.multi_address;
+              const maxSwapBtc = satoshisToBtc(provider.max_max_swap_amount);
+              const minSwapBtc = satoshisToBtc(provider.min_min_swap_amount);
+              const isOnline = provider.last_seen_ago_days !== undefined && provider.last_seen_ago_days < 1;
+              
+              return (
+                <tr class={`hover:bg-[#252525] transition-colors ${index % 2 === 0 ? 'bg-[#1a1a1a]' : 'bg-[#1e1e1e]'} ${!isOnline ? 'opacity-75' : ''}`}>
+                  <td class="px-6 py-3 font-mono text-sm" title={provider.multi_address}>
+                    <a href={`/liquidity/${provider.peer_id}`} class={`hover:text-[#ffc87a] transition-colors ${isOnline ? 'text-[#f7a41d]' : 'text-[#c9942a]'}`}>
+                      {displayAddress}
+                    </a>
+                  </td>
+                  <td class={`px-6 py-3 text-right font-medium ${isOnline ? 'text-[#4ade80]' : 'text-[#7ec07e]'}`}>
+                    {provider.online_days} days
+                  </td>
+                  <td class={`px-6 py-3 text-right font-mono text-sm ${isOnline ? 'text-[#eee]' : 'text-[#aaa]'}`}>
+                    {maxSwapBtc} BTC
+                  </td>
+                  <td class={`px-6 py-3 text-right font-mono text-sm ${isOnline ? 'text-[#eee]' : 'text-[#aaa]'}`}>
+                    {minSwapBtc} BTC
+                  </td>
+                  <td class="px-6 py-3 text-right">
+                    {isOnline ? (
+                      <span class="text-[#4ade80] font-medium">Recently</span>
+                    ) : (
+                      <span class="text-[#777]">{formatDaysAgo(provider.last_seen_ago_days)}</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })
+          ) : (
+            <tr>
+              <td colspan="5" class="px-6 py-8 text-center text-[#888]">
+                No provider data available.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   </div>
 </Layout>

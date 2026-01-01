@@ -27,4 +27,99 @@ const content = marked(template);
 
 <Layout title="Download eigenwallet">
   <Fragment set:html={content} />
+  
+  <script>
+    import { detectOS, detectArch } from '../lib/os-detection';
+
+    function highlightMatchingDownload() {
+      const os = detectOS();
+      const arch = detectArch();
+      
+      if (os === 'unknown') return;
+      
+      const rows = document.querySelectorAll('tr[data-platform][data-arch]');
+      let bestMatch: Element | null = null;
+      
+      // For Linux, always recommend Flatpak
+      if (os === 'linux') {
+        bestMatch = document.querySelector('tr[data-platform="linux"][data-type="flatpak"]');
+      } else {
+        for (const row of rows) {
+          const rowPlatform = row.getAttribute('data-platform');
+          const rowArch = row.getAttribute('data-arch');
+          
+          if (rowPlatform === os && rowArch === arch) {
+            bestMatch = row;
+            break;
+          }
+          // Fallback to x86_64 if no exact match
+          if (rowPlatform === os && rowArch === 'x86_64' && !bestMatch) {
+            bestMatch = row;
+          }
+        }
+      }
+      
+      if (bestMatch) {
+        bestMatch.classList.add('recommended-download');
+        
+        // Add "Recommended" badge after the file name (second td)
+        const fileCell = bestMatch.querySelectorAll('td')[1];
+        if (fileCell) {
+          const badge = document.createElement('span');
+          badge.className = 'recommended-badge';
+          badge.textContent = 'Recommended';
+          fileCell.appendChild(badge);
+        }
+      }
+    }
+
+    highlightMatchingDownload();
+  </script>
+  
+  <style is:global>
+    /* Table styling */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 1.1rem;
+      margin: 1.5rem 0;
+    }
+    
+    th, td {
+      border: 2px solid #444;
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+    
+    th {
+      background: #1a1a1a;
+      font-weight: 600;
+      border-bottom-width: 3px;
+    }
+    
+    tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+    
+    /* Recommended download highlight */
+    .recommended-download {
+      background: rgba(247, 164, 29, 0.15);
+    }
+    .recommended-download:hover {
+      background: rgba(247, 164, 29, 0.2);
+    }
+    .recommended-badge {
+      display: inline-block;
+      margin-left: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      background: #f7a41d;
+      color: #000;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 3px;
+      vertical-align: middle;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+  </style>
 </Layout>

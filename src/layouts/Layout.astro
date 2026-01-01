@@ -28,7 +28,9 @@ const { title, description = "eigenwallet - The Monero wallet for the future" } 
           </a>
         </div>
       </div>
-      <nav class="bg-[#737475] text-white border-t-4 border-[#f7a41d]">
+      
+      <!-- Desktop Navigation -->
+      <nav class="hidden md:block bg-[#737475] text-white border-t-4 border-[#f7a41d]">
         <div class="max-w-[1200px] mx-auto px-4 py-1 flex gap-6 text-[1.1rem] font-medium">
           <a href="/download" class="text-white hover:text-gray-200 transition-colors py-1 flex items-center gap-1.5">
             <img src="/icons/download.svg" width="16" height="16" alt="Download" />
@@ -45,9 +47,43 @@ const { title, description = "eigenwallet - The Monero wallet for the future" } 
           <a href="https://docs.eigenwallet.org/" target="_blank" class="ml-auto text-white hover:text-gray-200 transition-colors py-1">Docs <span class="text-gray-400">(work in progress)</span></a>
         </div>
       </nav>
+
+      <!-- Mobile Navigation -->
+      <nav class="md:hidden bg-[#737475] text-white border-t-4 border-[#f7a41d]">
+        <div class="max-w-[1200px] mx-auto px-4 py-2 flex items-center justify-between">
+          <span class="text-[1.1rem] font-medium text-gray-200">Menu</span>
+          <label for="mobile-menu-toggle" class="cursor-pointer p-1">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"/>
+            </svg>
+          </label>
+        </div>
+      </nav>
+      
+      <!-- Mobile Menu (collapsible) -->
+      <div class="md:hidden bg-[#535455]">
+        <input type="checkbox" id="mobile-menu-toggle" class="hidden peer" />
+        <div class="hidden peer-checked:block">
+          <div class="max-w-[1200px] mx-auto px-4 py-2 flex flex-col text-[1.1rem] font-medium">
+            <a href="/download" class="text-white hover:text-gray-200 transition-colors py-2 flex items-center gap-2">
+              <img src="/icons/download.svg" width="16" height="16" alt="Download" />
+              Download
+            </a>
+            <a href="/liquidity" class="text-white hover:text-gray-200 transition-colors py-2 flex items-center gap-2">
+              <img src="/icons/liquidity.svg" width="16" height="16" alt="Liquidity" />
+              Liquidity
+            </a>
+            <a href="/changelog" class="text-white hover:text-gray-200 transition-colors py-2 flex items-center gap-2">
+              <img src="/icons/changelog.svg" width="16" height="16" alt="Changelog" />
+              Changelog
+            </a>
+            <a href="https://docs.eigenwallet.org/" target="_blank" class="text-white hover:text-gray-200 transition-colors py-2">Docs</a>
+          </div>
+        </div>
+      </div>
     </header>
 
-    <main class="flex-1" style="max-width: 1200px; margin: 0 auto; padding: 0 1rem;">
+    <main class="flex-1" style="max-width: 1200px; margin: 0 auto; padding: 0 1rem; width: 100%; box-sizing: border-box;">
       <slot />
     </main>
 

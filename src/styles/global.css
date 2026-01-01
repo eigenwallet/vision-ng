@@ -11,6 +11,7 @@
     margin: 0;
     background-color: #111;
     color: #bbb;
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4 {
@@ -54,7 +55,7 @@
   th, td {
     padding: 0.6em;
     text-align: start;
-    white-space: nowrap;
+    white-space: normal;
     border: none;
   }
   
@@ -66,6 +67,34 @@
   
   tr:nth-child(even)>td {
     background: #1e1e1e;
+  }
+
+  .table-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    display: block;
+  }
+
+  .table-scroll table {
+    min-width: 700px;
+    width: auto;
+  }
+
+  .table-scroll th,
+  .table-scroll td {
+    white-space: nowrap;
+  }
+
+  .chart-responsive {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .chart-responsive svg {
+    width: 100% !important;
+    height: auto !important;
+    display: block;
   }
 
   /* Notice styling */
