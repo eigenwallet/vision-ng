@@ -1,0 +1,268 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getQuickDownloadUrls } from '../lib/downloads';
+
+const screenshots = [
+  '/imgs/screenshots/screenshot_1.png',
+  '/imgs/screenshots/screenshot_2.png',
+  '/imgs/screenshots/screenshot_3.png',
+  '/imgs/screenshots/screenshot_4.png'
+];
+
+const downloadUrls = await getQuickDownloadUrls();
+---
+
+<Layout title="eigenwallet">
+  <!-- Hero Section -->
+  <section class="mb-16 mt-8 flex flex-col lg:flex-row gap-8 items-center max-w-6xl mx-auto px-4">
+    <!-- Slideshow -->
+    <div class="relative w-full lg:w-3/5 border border-[#333] p-1 bg-[#222]">
+      <div class="relative group">
+        {screenshots.map((src, index) => (
+          <img
+            src={src}
+            alt={`Screenshot ${index + 1}`}
+            class={`${index === 0 ? 'relative w-full h-auto block' : 'absolute top-0 left-0 w-full h-full'} object-contain transition-opacity duration-500 ${index === 0 ? 'opacity-100' : 'opacity-0'}`}
+            data-index={index}
+          />
+        ))}
+
+        <!-- Navigation Arrows -->
+        <button id="prevBtn" class="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 border border-[#333] p-2 shadow-sm transition-all z-10 cursor-pointer text-white">
+          <img src="/icons/arrow-left.svg" width="24" height="24" alt="Previous" />
+        </button>
+        <button id="nextBtn" class="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 border border-[#333] p-2 shadow-sm transition-all z-10 cursor-pointer text-white">
+          <img src="/icons/arrow-right.svg" width="24" height="24" alt="Next" />
+        </button>
+
+        <!-- Dots -->
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          {screenshots.map((_, index) => (
+            <button
+              class={`w-3 h-3 rounded-full border border-gray-600 ${index === 0 ? 'bg-orange-500' : 'bg-gray-400'} hover:bg-gray-200 transition-colors dot-btn`}
+              data-index={index}
+            ></button>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="w-full lg:w-2/5 space-y-6">
+      <h2 class="text-2xl font-bold text-[#eee]">What is eigenwallet?</h2>
+      <ul class="space-y-4 text-[#bbb] text-[1.2rem]">
+        <li class="flex items-center gap-3">
+          <span class="text-[#f7a41d]">●</span>
+          <span class="inline-flex items-center">Send and receive Monero<img src="/imgs/icons/Monero.svg" alt="Monero" class="h-[1em] ml-1" /></span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-[#f7a41d] leading-normal">●</span>
+          <span class="inline-flex items-center flex-wrap gap-1">Battle-tested Atomic Swaps<span class="inline-flex items-center whitespace-nowrap">(<img src="/imgs/icons/Bitcoin.svg" alt="Bitcoin" class="h-[1em] mx-0.5" />→<img src="/imgs/icons/Monero.svg" alt="Monero" class="h-[1em] mx-0.5" />)<span class="text-gray-500 whitespace-nowrap">(Bitcoin → Monero)</span></span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-[#f7a41d] leading-normal">●</span>
+          <span class="flex flex-col"><span class="inline-flex items-center gap-1">Radical network privacy<img src="/imgs/icons/tor.svg" alt="Tor" class="h-[1em] mx-0.5" /></span><span class="text-gray-500">(Everything runs over Tor)</span></span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-[#f7a41d] leading-normal">●</span>
+          <span class="inline-flex items-center flex-wrap">Swap <img src="/imgs/icons/Bitcoin.svg" alt="Bitcoin" class="h-[1em] mx-1" /> → <img src="/imgs/icons/Monero.svg" alt="Monero" class="h-[1em] mx-1" /> with protocol guaranteed safety <span class="text-gray-500">(no frozen funds, no fraud, no scams)</span></span>
+        </li>
+        <li class="flex items-center gap-3">
+          <span class="text-[#f7a41d]">●</span>
+          <span>Buy Monero with EUR via SEPA <span class="text-gray-500">(EU only)</span></span>
+        </li>
+      </ul>
+
+      <!-- Download Button -->
+      <div class="flex flex-col gap-2 items-start">
+        <a 
+          id="downloadBtn" 
+          href="/download" 
+          class="inline-flex items-center gap-3 bg-[#f7a41d] hover:bg-[#e5941a] text-black font-bold py-4 px-8 text-xl transition-colors shadow-md hover:shadow-lg"
+          data-url-windows={downloadUrls.windows}
+          data-url-macos-silicon={downloadUrls.macosSilicon}
+          data-url-macos-intel={downloadUrls.macosIntel}
+          data-url-linux={downloadUrls.linux}
+        >
+          <span>Download</span>
+          <span id="osIcon"></span>
+        </a>
+        <a href="/download" class="text-sm text-[#888] hover:text-[#f7a41d] transition-colors">All downloads →</a>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    let currentIndex = 0;
+    const images = document.querySelectorAll('img[data-index]');
+    const dots = document.querySelectorAll('.dot-btn');
+    const totalImages = images.length;
+    let autoSlideInterval: number;
+
+    function showSlide(index: number) {
+      // Handle wrapping
+      if (index >= totalImages) index = 0;
+      if (index < 0) index = totalImages - 1;
+      
+      currentIndex = index;
+
+      // Update images
+      images.forEach((img) => {
+        const imgIndex = parseInt((img as HTMLElement).dataset.index || '0');
+        img.classList.toggle('opacity-100', imgIndex === currentIndex);
+        img.classList.toggle('opacity-0', imgIndex !== currentIndex);
+      });
+
+      // Update dots
+      dots.forEach((dot) => {
+        const dotIndex = parseInt((dot as HTMLElement).dataset.index || '0');
+        dot.classList.toggle('bg-orange-500', dotIndex === currentIndex);
+        dot.classList.toggle('bg-gray-400', dotIndex !== currentIndex);
+      });
+    }
+
+    function nextSlide() {
+      showSlide(currentIndex + 1);
+      resetTimer();
+    }
+
+    function prevSlide() {
+      showSlide(currentIndex - 1);
+      resetTimer();
+    }
+
+    function resetTimer() {
+      clearInterval(autoSlideInterval);
+      autoSlideInterval = setInterval(nextSlide, 5000);
+    }
+
+    // Event Listeners
+    document.getElementById('prevBtn')?.addEventListener('click', prevSlide);
+    document.getElementById('nextBtn')?.addEventListener('click', nextSlide);
+
+    dots.forEach((dot) => {
+      dot.addEventListener('click', (e) => {
+        const index = parseInt((e.target as HTMLElement).dataset.index || '0');
+        showSlide(index);
+        resetTimer();
+      });
+    });
+
+    // Start auto-slide
+    resetTimer();
+
+    // OS Detection for download button
+    const downloadBtn = document.getElementById('downloadBtn') as HTMLAnchorElement;
+    const osIcon = document.getElementById('osIcon');
+
+    const icons = {
+      windows: '<img src="/icons/os-windows.svg" width="20" height="20" alt="Windows" />',
+      macos: '<img src="/icons/os-macos.svg" width="20" height="20" alt="macOS" />',
+      linux: '<img src="/icons/os-linux.svg" width="20" height="20" alt="Linux" />'
+    };
+
+    function detectOS(): 'windows' | 'macos' | 'linux' | 'unknown' {
+      const ua = navigator.userAgent.toLowerCase();
+      const platform = (navigator as any).userAgentData?.platform?.toLowerCase() || navigator.platform?.toLowerCase() || '';
+      
+      if (platform.includes('win') || ua.includes('windows')) return 'windows';
+      if (platform.includes('mac') || ua.includes('mac')) return 'macos';
+      if (platform.includes('linux') || ua.includes('linux')) return 'linux';
+      return 'unknown';
+    }
+
+    function isSiliconMac(): boolean {
+      const ua = navigator.userAgent;
+      return /arm64|aarch64/i.test(ua) || 
+             ((navigator as any).userAgentData?.architecture === 'arm');
+    }
+
+    if (downloadBtn) {
+      const os = detectOS();
+      
+      if (osIcon) {
+        osIcon.innerHTML = icons[os] || '';
+      }
+
+      // Set download URL from server-rendered data attributes
+      if (os === 'windows') {
+        downloadBtn.href = downloadBtn.dataset.urlWindows || '/download';
+      } else if (os === 'macos') {
+        const url = isSiliconMac() 
+          ? downloadBtn.dataset.urlMacosSilicon 
+          : downloadBtn.dataset.urlMacosIntel;
+        downloadBtn.href = url || '/download';
+      } else if (os === 'linux') {
+        downloadBtn.href = downloadBtn.dataset.urlLinux || '/download';
+      }
+    }
+  </script>
+
+  <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 md:px-0">
+    <!-- Swaps -->
+    <div class="border border-[#444] p-8 flex flex-col items-center text-center transition-all duration-300 hover:shadow-[4px_4px_0px_0px_rgba(247,164,29,0.5)] hover:-translate-y-1 bg-[#1a1a1a]">
+      <div class="mb-4">
+        <img src="/icons/icon-swap.svg" width="48" height="48" alt="Atomic Swaps" />
+      </div>
+      <h3 class="text-xl font-bold mb-3 text-[#eee]">Atomic Swaps</h3>
+      <p class="text-[#bbb] leading-relaxed text-sm">
+        Exchange Bitcoin for Monero peer-to-peer. No accounts to sign up for and zero risk of frozen funds.
+      </p>
+    </div>
+
+    <!-- Self-Custody -->
+    <div class="border border-[#444] p-8 flex flex-col items-center text-center transition-all duration-300 hover:shadow-[4px_4px_0px_0px_rgba(247,164,29,0.5)] hover:-translate-y-1 bg-[#1a1a1a]">
+      <div class="mb-4">
+        <img src="/icons/icon-shield.svg" width="48" height="48" alt="Self-Custody" />
+      </div>
+      <h3 class="text-xl font-bold mb-3 text-[#eee]">Self-Custody</h3>
+      <p class="text-[#bbb] leading-relaxed text-sm">
+        Your keys, your coins. You are in complete control of your Monero.
+      </p>
+    </div>
+
+    <!-- Privacy (Tor) -->
+    <div class="border border-[#444] p-8 flex flex-col items-center text-center transition-all duration-300 hover:shadow-[4px_4px_0px_0px_rgba(247,164,29,0.5)] hover:-translate-y-1 bg-[#1a1a1a]">
+      <div class="mb-4">
+        <img src="/imgs/icons/tor.svg" width="48" height="48" alt="Tor Logo" class="brightness-90" />
+      </div>
+      <h3 class="text-xl font-bold mb-3 text-[#eee]">Network Privacy</h3>
+      <p class="text-[#bbb] leading-relaxed text-sm">
+        Built-in Tor integration ensures your network traffic remains anonymous and untraceable.
+      </p>
+    </div>
+
+    <!-- Cross-Platform -->
+    <div class="border border-[#444] p-8 flex flex-col items-center text-center transition-all duration-300 hover:shadow-[4px_4px_0px_0px_rgba(247,164,29,0.5)] hover:-translate-y-1 bg-[#1a1a1a]">
+      <div class="mb-4">
+        <img src="/icons/icon-monitor.svg" width="48" height="48" alt="Cross-Platform" />
+      </div>
+      <h3 class="text-xl font-bold mb-3 text-[#eee]">Cross-Platform</h3>
+      <p class="text-[#bbb] leading-relaxed text-sm">
+        Available for Linux, macOS, and Windows. Mobile support is coming soon.
+      </p>
+    </div>
+
+    <!-- Open Source -->
+    <div class="border border-[#444] p-8 flex flex-col items-center text-center transition-all duration-300 hover:shadow-[4px_4px_0px_0px_rgba(247,164,29,0.5)] hover:-translate-y-1 bg-[#1a1a1a]">
+      <div class="mb-4">
+        <img src="/icons/icon-chevrons.svg" width="48" height="48" alt="Open Source" />
+      </div>
+      <h3 class="text-xl font-bold mb-3 text-[#eee]">Open Source</h3>
+      <p class="text-[#bbb] leading-relaxed text-sm">
+        Transparent and auditable code. Built by the community, for the community.
+      </p>
+    </div>
+
+    <!-- Community Funded -->
+    <div class="border border-[#444] p-8 flex flex-col items-center text-center transition-all duration-300 hover:shadow-[4px_4px_0px_0px_rgba(247,164,29,0.5)] hover:-translate-y-1 bg-[#1a1a1a]">
+      <div class="mb-4">
+        <img src="/icons/icon-heart.svg" width="48" height="48" alt="Community Funded" />
+      </div>
+      <h3 class="text-xl font-bold mb-3 text-[#eee]">Community Funded</h3>
+      <p class="text-[#bbb] leading-relaxed text-sm">
+        Sustained entirely by donations from users who believe in privacy.
+      </p>
+    </div>
+  </section>
+</Layout>

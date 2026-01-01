@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@layer base {
+  /* Typography */
+  html {
+    font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Liberation Sans, Helvetica Neue, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+  }
+  
+  body {
+    line-height: 1.45;
+    margin: 0;
+    background-color: #111;
+    color: #bbb;
+  }
+
+  h1, h2, h3, h4 {
+    margin: 0.8em 0 0.5em;
+    line-height: 1.2;
+    font-weight: bold;
+    color: #ccc;
+  }
+  
+  h1 { font-size: 2em; }
+  h2 { font-size: 1.5em; }
+  h3 { font-size: 1.25em; }
+  
+  p { margin: 0.8em 0; }
+  
+  a { color: #88f; }
+  a:hover { text-decoration: none; }
+  
+  strong, b { font-weight: bold; }
+  em, i { font-style: italic; }
+
+  /* Code */
+  code {
+    font-family: monospace;
+    font-size: 0.9em;
+    background: #252525;
+    color: #ccc;
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+    border: 1px solid #3a3a3a;
+  }
+
+  /* Tables */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 2em 0;
+    border-color: grey;
+  }
+
+  th, td {
+    padding: 0.6em;
+    text-align: start;
+    white-space: nowrap;
+    border: none;
+  }
+  
+  td { font-size: 0.96em; }
+
+  th, .last-row-in-section {
+    border-bottom: 2px solid grey;
+  }
+  
+  tr:nth-child(even)>td {
+    background: #1e1e1e;
+  }
+
+  /* Notice styling */
+  .notice {
+    background: rgb(250, 241, 213);
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 0.75rem;
+    text-align: center;
+    font-style: italic;
+  }
+}

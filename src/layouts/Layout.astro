@@ -1,0 +1,76 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "eigenwallet - The Monero wallet for the future" } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/imgs/icon_new.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <header class="flex flex-col mb-8 font-sans">
+      <div class="bg-[#111111]">
+        <div class="max-w-[1200px] mx-auto px-4 w-full">
+          <a href="/" class="flex items-center gap-3 no-underline hover:opacity-90 transition-opacity py-4">
+            <img src="/imgs/icon_new.svg" alt="eigenwallet" class="h-[60px] w-auto" />
+          </a>
+        </div>
+      </div>
+      <nav class="bg-[#737475] text-white border-t-4 border-[#f7a41d]">
+        <div class="max-w-[1200px] mx-auto px-4 py-1 flex gap-6 text-[1.1rem] font-medium">
+          <a href="/download" class="text-white hover:text-gray-200 transition-colors py-1 flex items-center gap-1.5">
+            <img src="/icons/download.svg" width="16" height="16" alt="Download" />
+            Download
+          </a>
+          <a href="/liquidity" class="text-white hover:text-gray-200 transition-colors py-1 flex items-center gap-1.5">
+            <img src="/icons/liquidity.svg" width="16" height="16" alt="Liquidity" />
+            Liquidity
+          </a>
+          <a href="/changelog" class="text-white hover:text-gray-200 transition-colors py-1 flex items-center gap-1.5">
+            <img src="/icons/changelog.svg" width="16" height="16" alt="Changelog" />
+            Changelog
+          </a>
+          <a href="https://docs.eigenwallet.org/" target="_blank" class="ml-auto text-white hover:text-gray-200 transition-colors py-1">Docs <span class="text-gray-400">(work in progress)</span></a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="flex-1" style="max-width: 1200px; margin: 0 auto; padding: 0 1rem;">
+      <slot />
+    </main>
+
+    <footer class="mt-auto py-8">
+      <div class="flex justify-center">
+        <div class="bg-[#e8e8e8] rounded-full px-8 py-3 flex gap-10">
+          <a href="https://discord.gg/aqSyyJ35UW" target="_blank" class="opacity-60 hover:opacity-100 transition-opacity">
+            <img src="/imgs/discord.svg" alt="Discord" class="h-6 w-6" />
+          </a>
+          <a href="https://x.com/eigenwallet" target="_blank" class="opacity-60 hover:opacity-100 transition-opacity">
+            <img src="/imgs/x.svg" alt="X" class="h-6 w-6" />
+          </a>
+          <a href="https://matrix.to/#/%23unstoppableswap-space:matrix.org" target="_blank" class="opacity-60 hover:opacity-100 transition-opacity">
+            <img src="/imgs/matrix.svg" alt="Matrix" class="h-6 w-6" />
+          </a>
+          <a href="https://github.com/eigenwallet/core" target="_blank" class="opacity-60 hover:opacity-100 transition-opacity">
+            <img src="/imgs/github.svg" alt="GitHub" class="h-6 w-6" />
+          </a>
+          <a href="http://eigenwu5vl53rjyd3zxfzy25mfoaeqlhpuvlu5s46ygggllfbb4beiid.onion/" target="_blank" class="opacity-60 hover:opacity-100 transition-opacity">
+            <img src="/imgs/tor.svg" alt="Tor" class="h-6 w-6" />
+          </a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

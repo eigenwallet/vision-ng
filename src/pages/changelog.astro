@@ -1,0 +1,23 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { marked } from 'marked';
+
+const CHANGELOG_URL = 'https://raw.githubusercontent.com/eigenwallet/core/refs/heads/master/CHANGELOG.md';
+
+let changelogContent = '';
+try {
+  const response = await fetch(CHANGELOG_URL);
+  if (response.ok) {
+    const markdown = await response.text();
+    changelogContent = marked(markdown);
+  } else {
+    changelogContent = '<p>Failed to fetch changelog. Please visit <a href="https://github.com/eigenwallet/core/blob/master/CHANGELOG.md">GitHub</a>.</p>';
+  }
+} catch (error) {
+  changelogContent = '<p>Failed to fetch changelog. Please visit <a href="https://github.com/eigenwallet/core/blob/master/CHANGELOG.md">GitHub</a>.</p>';
+}
+---
+
+<Layout title="Changelog">
+  <Fragment set:html={changelogContent} />
+</Layout>

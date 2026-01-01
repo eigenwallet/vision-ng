@@ -1,0 +1,30 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { fetchLatestRelease, generateGuiTable, generateCliTable, generateAurTable } from '../lib/downloads';
+import { marked } from 'marked';
+import fs from 'fs';
+
+const releaseInfo = await fetchLatestRelease();
+
+// Read the markdown template
+let template = fs.readFileSync('src/content/download.md', 'utf-8');
+
+// Generate tables
+const guiTable = generateGuiTable(releaseInfo);
+const cliTable = generateCliTable(releaseInfo);
+const aurTable = await generateAurTable();
+
+// Replace placeholders
+template = template
+  .replace(/\{\{LATEST_VERSION\}\}/g, releaseInfo.version)
+  .replace(/\{\{RELEASE_DATE\}\}/g, releaseInfo.releaseDate)
+  .replace(/\{\{GUI_TABLE\}\}/g, guiTable)
+  .replace(/\{\{CLI_TABLE\}\}/g, cliTable)
+  .replace(/\{\{AUR_TABLE\}\}/g, aurTable);
+
+const content = marked(template);
+---
+
+<Layout title="Download eigenwallet">
+  <Fragment set:html={content} />
+</Layout>
