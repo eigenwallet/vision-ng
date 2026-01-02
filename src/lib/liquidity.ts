@@ -1,12 +1,17 @@
 import * as vega from 'vega';
 import * as vl from 'vega-lite';
 import { getCache, setCache } from './cache';
+import { fetchWithRetry } from './fetch';
 
-const LIQUIDITY_DAILY_API_URL = 'https://api.eigenwallet.org/api/liquidity-daily';
+const LIQUIDITY_DAILY_API_URL =
+  'https://api.eigenwallet.org/api/liquidity-daily';
 const LIST_API_URL = 'https://api.eigenwallet.org/api/list';
-const PROVIDER_QUOTE_STATS_API_URL = 'https://api.eigenwallet.org/api/provider-quote-stats';
-const PROVIDER_DAILY_SWAP_BOUNDS_API_URL = 'https://api.eigenwallet.org/api/provider-daily-swap-bounds';
-const DAILY_PRICE_STATS_API_URL = 'https://api.eigenwallet.org/api/daily-price-stats';
+const PROVIDER_QUOTE_STATS_API_URL =
+  'https://api.eigenwallet.org/api/provider-quote-stats';
+const PROVIDER_DAILY_SWAP_BOUNDS_API_URL =
+  'https://api.eigenwallet.org/api/provider-daily-swap-bounds';
+const DAILY_PRICE_STATS_API_URL =
+  'https://api.eigenwallet.org/api/daily-price-stats';
 const CACHE_KEY = 'liquidity-daily';
 const OFFERS_CACHE_KEY = 'offers-list';
 const PROVIDERS_CACHE_KEY = 'provider-quote-stats';
@@ -77,8 +82,8 @@ async function fetchLiquidityData(): Promise<LiquidityDayData[] | null> {
 
   try {
     console.log('Fetching liquidity data from API...');
-    const response = await fetch(LIQUIDITY_DAILY_API_URL);
-    
+    const response = await fetchWithRetry(LIQUIDITY_DAILY_API_URL);
+
     if (!response.ok) {
       console.warn(`Liquidity API responded with status: ${response.status}`);
       return null;
@@ -96,22 +101,26 @@ async function fetchLiquidityData(): Promise<LiquidityDayData[] | null> {
 /**
  * Generate SVG chart for liquidity data using Vega-Lite
  */
-async function generateLiquidityChart(liquidityData: LiquidityDayData[]): Promise<string> {
+async function generateLiquidityChart(
+  liquidityData: LiquidityDayData[]
+): Promise<string> {
   if (liquidityData.length === 0) {
     return FALLBACK_SVG;
   }
 
   // Transform data for Vega-Lite
-  const chartData = liquidityData.map(d => {
-    const year = d.date[0];
-    const dayOfYear = d.date[1];
-    const date = new Date(year, 0, dayOfYear);
-    
-    return {
-      date: date.toISOString().split('T')[0],
-      liquidity: d.totalLiquidityBtc
-    };
-  }).reverse(); // Show chronological order (oldest to newest)
+  const chartData = liquidityData
+    .map(d => {
+      const year = d.date[0];
+      const dayOfYear = d.date[1];
+      const date = new Date(year, 0, dayOfYear);
+
+      return {
+        date: date.toISOString().split('T')[0],
+        liquidity: d.totalLiquidityBtc,
+      };
+    })
+    .reverse(); // Show chronological order (oldest to newest)
 
   const spec: vl.TopLevelSpec = {
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
@@ -127,7 +136,7 @@ async function generateLiquidityChart(liquidityData: LiquidityDayData[]): Promis
           type: 'area',
           color: '#ff6b35',
           opacity: 0.15,
-          line: false
+          line: false,
         },
         encoding: {
           x: {
@@ -141,8 +150,8 @@ async function generateLiquidityChart(liquidityData: LiquidityDayData[]): Promis
               labelColor: '#666',
               tickColor: 'transparent',
               domainColor: 'transparent',
-              grid: false
-            }
+              grid: false,
+            },
           },
           y: {
             title: null,
@@ -154,10 +163,11 @@ async function generateLiquidityChart(liquidityData: LiquidityDayData[]): Promis
               tickColor: 'transparent',
               domainColor: 'transparent',
               grid: false,
-              labelExpr: 'datum.value == 0 ? "" : format(datum.value, ".0f") + " BTC"'
-            }
-          }
-        }
+              labelExpr:
+                'datum.value == 0 ? "" : format(datum.value, ".0f") + " BTC"',
+            },
+          },
+        },
       },
       // Line
       {
@@ -166,14 +176,14 @@ async function generateLiquidityChart(liquidityData: LiquidityDayData[]): Promis
           color: '#ff6b35',
           strokeWidth: 2,
           strokeCap: 'round',
-          strokeJoin: 'round'
+          strokeJoin: 'round',
         },
         encoding: {
           x: { field: 'date', type: 'temporal' },
-          y: { field: 'liquidity', type: 'quantitative' }
-        }
-      }
-    ]
+          y: { field: 'liquidity', type: 'quantitative' },
+        },
+      },
+    ],
   };
 
   try {
@@ -184,7 +194,10 @@ async function generateLiquidityChart(liquidityData: LiquidityDayData[]): Promis
     return svg
       .replace(/\s*width="[^"]*"/, '')
       .replace(/\s*height="[^"]*"/, '')
-      .replace('<svg', '<svg style="width: 100%; height: auto; display: block;"');
+      .replace(
+        '<svg',
+        '<svg style="width: 100%; height: auto; display: block;"'
+      );
   } catch (error) {
     console.error('Failed to generate liquidity chart:', error);
     return FALLBACK_SVG;
@@ -196,7 +209,7 @@ async function generateLiquidityChart(liquidityData: LiquidityDayData[]): Promis
  */
 export async function getLiquidityData(): Promise<LiquidityData> {
   const liquidityData = await fetchLiquidityData();
-  const chartSvg = liquidityData 
+  const chartSvg = liquidityData
     ? await generateLiquidityChart(liquidityData)
     : FALLBACK_SVG;
 
@@ -205,8 +218,9 @@ export async function getLiquidityData(): Promise<LiquidityData> {
 
 /**
  * Fetch current offers from API with caching
+ * Returns null on network error, empty array if no offers available
  */
-export async function fetchOffers(): Promise<Offer[]> {
+export async function fetchOffers(): Promise<Offer[] | null> {
   const cached = getCache<Offer[]>(OFFERS_CACHE_KEY);
   if (cached) {
     return cached;
@@ -214,11 +228,11 @@ export async function fetchOffers(): Promise<Offer[]> {
 
   try {
     console.log('Fetching offers data from API...');
-    const response = await fetch(LIST_API_URL);
-    
+    const response = await fetchWithRetry(LIST_API_URL);
+
     if (!response.ok) {
       console.warn(`List API responded with status: ${response.status}`);
-      return [];
+      return null;
     }
 
     const data: Offer[] = await response.json();
@@ -228,7 +242,7 @@ export async function fetchOffers(): Promise<Offer[]> {
     return mainnetOffers;
   } catch (error) {
     console.warn('Failed to fetch offers data:', error);
-    return [];
+    return null;
   }
 }
 
@@ -255,7 +269,10 @@ export function formatPrice(satoshisPerXmr: number): string {
  * Convert BTC (satoshis) to XMR based on offer price
  * price is satoshis per XMR
  */
-export function btcToXmr(satoshis: number, priceInSatoshisPerXmr: number): string {
+export function btcToXmr(
+  satoshis: number,
+  priceInSatoshisPerXmr: number
+): string {
   const xmr = satoshis / priceInSatoshisPerXmr;
   if (xmr >= 100) {
     return xmr.toFixed(1);
@@ -267,8 +284,11 @@ export function btcToXmr(satoshis: number, priceInSatoshisPerXmr: number): strin
 
 /**
  * Fetch provider quote stats from API with caching
+ * Returns null on network error, empty array if no providers available
  */
-export async function fetchProviderStats(): Promise<ProviderQuoteStats[]> {
+export async function fetchProviderStats(): Promise<
+  ProviderQuoteStats[] | null
+> {
   const cached = getCache<ProviderQuoteStats[]>(PROVIDERS_CACHE_KEY);
   if (cached) {
     return cached;
@@ -276,11 +296,13 @@ export async function fetchProviderStats(): Promise<ProviderQuoteStats[]> {
 
   try {
     console.log('Fetching provider stats from API...');
-    const response = await fetch(PROVIDER_QUOTE_STATS_API_URL);
-    
+    const response = await fetchWithRetry(PROVIDER_QUOTE_STATS_API_URL);
+
     if (!response.ok) {
-      console.warn(`Provider stats API responded with status: ${response.status}`);
-      return [];
+      console.warn(
+        `Provider stats API responded with status: ${response.status}`
+      );
+      return null;
     }
 
     const data: ProviderQuoteStats[] = await response.json();
@@ -290,14 +312,17 @@ export async function fetchProviderStats(): Promise<ProviderQuoteStats[]> {
     return filtered;
   } catch (error) {
     console.warn('Failed to fetch provider stats:', error);
-    return [];
+    return null;
   }
 }
 
 /**
  * Fetch provider daily swap bounds from API with caching
+ * Returns null on network error, empty array if no bounds available
  */
-export async function fetchProviderDailyBounds(): Promise<ProviderDailySwapBounds[]> {
+export async function fetchProviderDailyBounds(): Promise<
+  ProviderDailySwapBounds[] | null
+> {
   const cached = getCache<ProviderDailySwapBounds[]>(PROVIDER_BOUNDS_CACHE_KEY);
   if (cached) {
     return cached;
@@ -305,11 +330,13 @@ export async function fetchProviderDailyBounds(): Promise<ProviderDailySwapBound
 
   try {
     console.log('Fetching provider daily bounds from API...');
-    const response = await fetch(PROVIDER_DAILY_SWAP_BOUNDS_API_URL);
-    
+    const response = await fetchWithRetry(PROVIDER_DAILY_SWAP_BOUNDS_API_URL);
+
     if (!response.ok) {
-      console.warn(`Provider daily bounds API responded with status: ${response.status}`);
-      return [];
+      console.warn(
+        `Provider daily bounds API responded with status: ${response.status}`
+      );
+      return null;
     }
 
     const data: ProviderDailySwapBounds[] = await response.json();
@@ -317,23 +344,30 @@ export async function fetchProviderDailyBounds(): Promise<ProviderDailySwapBound
     return data;
   } catch (error) {
     console.warn('Failed to fetch provider daily bounds:', error);
-    return [];
+    return null;
   }
 }
 
 /**
  * Get provider by peer ID
  */
-export async function getProviderById(peerId: string): Promise<ProviderQuoteStats | null> {
+export async function getProviderById(
+  peerId: string
+): Promise<ProviderQuoteStats | null> {
   const providers = await fetchProviderStats();
+  if (!providers) return null;
   return providers.find(p => p.peer_id === peerId) || null;
 }
 
 /**
  * Get historical bounds for a specific provider
+ * Returns null on network error, empty array if no bounds for this provider
  */
-export async function getProviderHistoricalBounds(peerId: string): Promise<ProviderDailySwapBounds[]> {
+export async function getProviderHistoricalBounds(
+  peerId: string
+): Promise<ProviderDailySwapBounds[] | null> {
   const bounds = await fetchProviderDailyBounds();
+  if (!bounds) return null;
   return bounds
     .filter(b => b.peer_id === peerId)
     .sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime());
@@ -363,8 +397,8 @@ export function formatDaysAgo(days: number | null | undefined): string {
  */
 export async function generateProviderChart(peerId: string): Promise<string> {
   const historicalData = await getProviderHistoricalBounds(peerId);
-  
-  if (historicalData.length === 0) {
+
+  if (!historicalData || historicalData.length === 0) {
     return `<svg viewBox="0 0 800 200" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto; display:block;">
       <text x="400" y="100" text-anchor="middle" fill="#666">No historical data available</text>
     </svg>`;
@@ -388,7 +422,7 @@ export async function generateProviderChart(peerId: string): Promise<string> {
           type: 'area',
           color: '#ff6b35',
           opacity: 0.15,
-          line: false
+          line: false,
         },
         encoding: {
           x: {
@@ -402,8 +436,8 @@ export async function generateProviderChart(peerId: string): Promise<string> {
               labelColor: '#666',
               tickColor: 'transparent',
               domainColor: 'transparent',
-              grid: false
-            }
+              grid: false,
+            },
           },
           y: {
             title: null,
@@ -415,10 +449,10 @@ export async function generateProviderChart(peerId: string): Promise<string> {
               tickColor: 'transparent',
               domainColor: 'transparent',
               grid: false,
-              labelExpr: 'format(datum.value, ".3f") + " BTC"'
-            }
-          }
-        }
+              labelExpr: 'format(datum.value, ".3f") + " BTC"',
+            },
+          },
+        },
       },
       {
         mark: {
@@ -426,14 +460,14 @@ export async function generateProviderChart(peerId: string): Promise<string> {
           color: '#ff6b35',
           strokeWidth: 2,
           strokeCap: 'round',
-          strokeJoin: 'round'
+          strokeJoin: 'round',
         },
         encoding: {
           x: { field: 'date', type: 'temporal' },
-          y: { field: 'maxSwap', type: 'quantitative' }
-        }
-      }
-    ]
+          y: { field: 'maxSwap', type: 'quantitative' },
+        },
+      },
+    ],
   };
 
   try {
@@ -464,10 +498,12 @@ async function fetchDailyPriceStats(): Promise<DailyPriceStats[] | null> {
 
   try {
     console.log('Fetching daily price stats from API...');
-    const response = await fetch(DAILY_PRICE_STATS_API_URL);
-    
+    const response = await fetchWithRetry(DAILY_PRICE_STATS_API_URL);
+
     if (!response.ok) {
-      console.warn(`Daily price stats API responded with status: ${response.status}`);
+      console.warn(
+        `Daily price stats API responded with status: ${response.status}`
+      );
       return null;
     }
 
@@ -483,29 +519,33 @@ async function fetchDailyPriceStats(): Promise<DailyPriceStats[] | null> {
 /**
  * Generate SVG chart for best daily price (lowest price = best rate for BTC→XMR)
  */
-async function generateBestPriceChart(priceData: DailyPriceStats[]): Promise<string> {
+async function generateBestPriceChart(
+  priceData: DailyPriceStats[]
+): Promise<string> {
   if (priceData.length === 0) {
     return FALLBACK_SVG;
   }
 
   // Filter out entries with avg_price of 0 (invalid data)
   const validData = priceData.filter(d => d.avg_price > 0);
-  
+
   if (validData.length === 0) {
     return FALLBACK_SVG;
   }
 
   // Transform data for Vega-Lite
-  const chartData = validData.map(d => {
-    const year = d.date[0];
-    const dayOfYear = d.date[1];
-    const date = new Date(year, 0, dayOfYear);
-    
-    return {
-      date: date.toISOString().split('T')[0],
-      avgPrice: d.avg_price / SATOSHIS_PER_BTC // Convert to BTC per XMR
-    };
-  }).reverse(); // Show chronological order (oldest to newest)
+  const chartData = validData
+    .map(d => {
+      const year = d.date[0];
+      const dayOfYear = d.date[1];
+      const date = new Date(year, 0, dayOfYear);
+
+      return {
+        date: date.toISOString().split('T')[0],
+        avgPrice: d.avg_price / SATOSHIS_PER_BTC, // Convert to BTC per XMR
+      };
+    })
+    .reverse(); // Show chronological order (oldest to newest)
 
   const spec: vl.TopLevelSpec = {
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
@@ -521,7 +561,7 @@ async function generateBestPriceChart(priceData: DailyPriceStats[]): Promise<str
           type: 'area',
           color: '#22c55e',
           opacity: 0.15,
-          line: false
+          line: false,
         },
         encoding: {
           x: {
@@ -535,8 +575,8 @@ async function generateBestPriceChart(priceData: DailyPriceStats[]): Promise<str
               labelColor: '#666',
               tickColor: 'transparent',
               domainColor: 'transparent',
-              grid: false
-            }
+              grid: false,
+            },
           },
           y: {
             title: null,
@@ -548,10 +588,10 @@ async function generateBestPriceChart(priceData: DailyPriceStats[]): Promise<str
               tickColor: 'transparent',
               domainColor: 'transparent',
               grid: false,
-              labelExpr: 'format(datum.value, ".6f") + " BTC"'
-            }
-          }
-        }
+              labelExpr: 'format(datum.value, ".6f") + " BTC"',
+            },
+          },
+        },
       },
       // Line
       {
@@ -560,14 +600,14 @@ async function generateBestPriceChart(priceData: DailyPriceStats[]): Promise<str
           color: '#22c55e',
           strokeWidth: 2,
           strokeCap: 'round',
-          strokeJoin: 'round'
+          strokeJoin: 'round',
         },
         encoding: {
           x: { field: 'date', type: 'temporal' },
-          y: { field: 'avgPrice', type: 'quantitative' }
-        }
-      }
-    ]
+          y: { field: 'avgPrice', type: 'quantitative' },
+        },
+      },
+    ],
   };
 
   try {
@@ -578,7 +618,10 @@ async function generateBestPriceChart(priceData: DailyPriceStats[]): Promise<str
     return svg
       .replace(/\s*width="[^"]*"/, '')
       .replace(/\s*height="[^"]*"/, '')
-      .replace('<svg', '<svg style="width: 100%; height: auto; display: block;"');
+      .replace(
+        '<svg',
+        '<svg style="width: 100%; height: auto; display: block;"'
+      );
   } catch (error) {
     console.error('Failed to generate best price chart:', error);
     return FALLBACK_SVG;
@@ -590,7 +633,7 @@ async function generateBestPriceChart(priceData: DailyPriceStats[]): Promise<str
  */
 export async function getBestPriceData(): Promise<PriceChartData> {
   const priceData = await fetchDailyPriceStats();
-  const chartSvg = priceData 
+  const chartSvg = priceData
     ? await generateBestPriceChart(priceData)
     : FALLBACK_SVG;
 

@@ -1,4 +1,5 @@
 import { getCache, setCache } from './cache';
+import { fetchWithRetry } from './fetch';
 import 'dotenv/config';
 
 const GITHUB_API_BASE = 'https://api.github.com/repos/eigenwallet/core';
@@ -6,7 +7,7 @@ const GITHUB_RELEASES_API = `${GITHUB_API_BASE}/releases/latest`;
 
 function getGitHubHeaders(): HeadersInit {
   const headers: HeadersInit = {
-    'Accept': 'application/vnd.github+json',
+    Accept: 'application/vnd.github+json',
   };
 
   const token = process.env.GITHUB_TOKEN;
@@ -24,7 +25,13 @@ export interface DownloadAsset {
   size: string;
   architecture: string;
   platform: string;
-  type: 'executable' | 'appimage' | 'installer' | 'bundle' | 'archive' | 'instructions';
+  type:
+    | 'executable'
+    | 'appimage'
+    | 'installer'
+    | 'bundle'
+    | 'archive'
+    | 'instructions';
 }
 
 export interface ReleaseInfo {
@@ -39,8 +46,8 @@ async function fetchGitHubRelease(): Promise<any> {
 
   if (!release) {
     console.log('Fetching fresh GitHub release data...');
-    const response = await fetch(GITHUB_RELEASES_API, {
-      headers: getGitHubHeaders()
+    const response = await fetchWithRetry(GITHUB_RELEASES_API, {
+      headers: getGitHubHeaders(),
     });
     if (!response.ok) {
       throw new Error(`GitHub API responded with status: ${response.status}`);
@@ -53,10 +60,11 @@ async function fetchGitHubRelease(): Promise<any> {
 }
 
 function filterWalletAssets(assets: any[]): any[] {
-  return assets.filter((asset: any) =>
-    asset.name.startsWith('eigenwallet_') &&
-    !asset.name.endsWith('.sig') &&
-    !asset.name.endsWith('.asc')
+  return assets.filter(
+    (asset: any) =>
+      asset.name.startsWith('eigenwallet_') &&
+      !asset.name.endsWith('.sig') &&
+      !asset.name.endsWith('.asc')
   );
 }
 
@@ -74,30 +82,30 @@ function transformAsset(asset: any, signatureUrl: string): DownloadAsset {
     size: formatFileSize(asset.size),
     architecture,
     platform,
-    type
+    type,
   };
 }
 
 function createSpecialInstallMethods(): DownloadAsset[] {
   return [
     {
-      name: "Flatpak",
-      downloadUrl: "/flatpak",
-      signatureUrl: "",
-      size: "",
+      name: 'Flatpak',
+      downloadUrl: '/flatpak',
+      signatureUrl: '',
+      size: '',
       architecture: "x86_64 <span style='float: right;'>Flatpak</span>",
-      platform: "Linux",
-      type: "instructions"
+      platform: 'Linux',
+      type: 'instructions',
     },
     {
-      name: "AUR",
-      downloadUrl: "/download#aur",
-      signatureUrl: "",
-      size: "",
+      name: 'AUR',
+      downloadUrl: '/download#aur',
+      signatureUrl: '',
+      size: '',
       architecture: "x86_64 <span style='float: right;'>AUR</span>",
-      platform: "Linux",
-      type: "instructions"
-    }
+      platform: 'Linux',
+      type: 'instructions',
+    },
   ];
 }
 
@@ -115,12 +123,14 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo> {
   assets.push(...createSpecialInstallMethods());
 
   const version = release.tag_name.replace(/^v/, '');
-  const releaseDate = new Date(release.published_at).toISOString().split('T')[0];
+  const releaseDate = new Date(release.published_at)
+    .toISOString()
+    .split('T')[0];
 
   return {
     version,
     releaseDate,
-    assets
+    assets,
   };
 }
 
@@ -133,8 +143,11 @@ export interface QuickDownloadUrls {
 
 export async function getQuickDownloadUrls(): Promise<QuickDownloadUrls> {
   const release = await fetchGitHubRelease();
-  const assets = (release.assets || []).filter((a: any) => 
-    a.name.startsWith('eigenwallet_') && !a.name.endsWith('.sig') && !a.name.endsWith('.asc')
+  const assets = (release.assets || []).filter(
+    (a: any) =>
+      a.name.startsWith('eigenwallet_') &&
+      !a.name.endsWith('.sig') &&
+      !a.name.endsWith('.asc')
   );
 
   const findAsset = (predicate: (name: string) => boolean): string => {
@@ -142,67 +155,101 @@ export async function getQuickDownloadUrls(): Promise<QuickDownloadUrls> {
     return asset?.browser_download_url || '/download';
   };
 
-  const isArm = (name: string) => name.includes('aarch64') || name.includes('arm64');
-  const isX86 = (name: string) => name.includes('x86_64') || name.includes('x64') || name.includes('amd64');
+  const isArm = (name: string) =>
+    name.includes('aarch64') || name.includes('arm64');
+  const isX86 = (name: string) =>
+    name.includes('x86_64') || name.includes('x64') || name.includes('amd64');
 
   return {
     windows: findAsset(name => name.endsWith('.exe')),
     macosSilicon: findAsset(name => name.endsWith('.dmg') && isArm(name)),
     macosIntel: findAsset(name => name.endsWith('.dmg') && isX86(name)),
-    linux: '/flatpak'
+    linux: '/flatpak',
   };
 }
 
 function detectPlatform(name: string): string {
   // Check for Linux-specific formats first (before .app check to avoid .appimage false positive)
-  if (name.includes('linux') || name.includes('.appimage') || name.includes('.deb') || name.includes('.rpm')) return "Linux";
+  if (
+    name.includes('linux') ||
+    name.includes('.appimage') ||
+    name.includes('.deb') ||
+    name.includes('.rpm')
+  )
+    return 'Linux';
 
   // Check for macOS (use .app.tar.gz or .dmg to avoid .appimage false positive)
-  if (name.includes('darwin') || name.includes('macos') || name.includes('.dmg') || name.includes('.app.tar.gz')) return "macOS";
+  if (
+    name.includes('darwin') ||
+    name.includes('macos') ||
+    name.includes('.dmg') ||
+    name.includes('.app.tar.gz')
+  )
+    return 'macOS';
 
   // Check for Windows
-  if (name.includes('windows') || name.includes('win') || name.includes('.exe') || name.includes('.msi')) return "Windows";
+  if (
+    name.includes('windows') ||
+    name.includes('win') ||
+    name.includes('.exe') ||
+    name.includes('.msi')
+  )
+    return 'Windows';
 
-  return "Unknown";
+  return 'Unknown';
 }
 
 function detectAssetType(name: string): DownloadAsset['type'] {
-  if (name.includes('.exe')) return "executable";
-  if (name.includes('.msi') || name.includes('.deb') || name.includes('.rpm')) return "installer";
-  if (name.includes('.dmg') || name.includes('.app.tar.gz')) return "bundle";
-  if (name.includes('.appimage')) return "appimage";
-  return "archive";
+  if (name.includes('.exe')) return 'executable';
+  if (name.includes('.msi') || name.includes('.deb') || name.includes('.rpm'))
+    return 'installer';
+  if (name.includes('.dmg') || name.includes('.app.tar.gz')) return 'bundle';
+  if (name.includes('.appimage')) return 'appimage';
+  return 'archive';
 }
 
 function formatArchitecture(name: string, platform: string): string {
   const isAppImage = name.includes('.appimage');
   const isDebian = name.includes('.deb');
   // Match x86_64, amd64, or x64 patterns
-  const isX86 = name.includes('x86_64') || name.includes('amd64') || name.includes('x64');
+  const isX86 =
+    name.includes('x86_64') || name.includes('amd64') || name.includes('x64');
   const isArm = name.includes('aarch64') || name.includes('arm64');
 
   if (isX86) {
-    if (platform === "macOS") {
-      const macReleaseType = name.includes('.dmg') ? 'DMG' : name.includes('.app.tar.gz') ? 'Bundle' : 'Binary';
+    if (platform === 'macOS') {
+      const macReleaseType = name.includes('.dmg')
+        ? 'DMG'
+        : name.includes('.app.tar.gz')
+          ? 'Bundle'
+          : 'Binary';
       return `Intel <span style='float: right;'>${macReleaseType}</span>`;
     }
     if (isAppImage) return "x86_64 <span style='float: right;'>AppImage</span>";
     if (isDebian) return "x86_64 <span style='float: right;'>Debian</span>";
-    return "x86_64";
+    return 'x86_64';
   }
 
   if (isArm) {
-    if (platform === "macOS") {
-      const macReleaseType = name.includes('.dmg') ? 'DMG' : name.includes('.app.tar.gz') ? 'Bundle' : 'Binary';
+    if (platform === 'macOS') {
+      const macReleaseType = name.includes('.dmg')
+        ? 'DMG'
+        : name.includes('.app.tar.gz')
+          ? 'Bundle'
+          : 'Binary';
       return `Silicon <span style='float: right;'>${macReleaseType}</span>`;
     }
-    return "ARM64";
+    return 'ARM64';
   }
 
-  return "";
+  return '';
 }
 
-function parseAssetName(assetName: string): { platform: string; architecture: string; type: DownloadAsset['type'] } {
+function parseAssetName(assetName: string): {
+  platform: string;
+  architecture: string;
+  type: DownloadAsset['type'];
+} {
   const name = assetName.toLowerCase();
   const platform = detectPlatform(name);
   const architecture = formatArchitecture(name, platform);
@@ -243,25 +290,31 @@ function formatFileSize(bytes: number): string {
 const PLATFORM_ORDER = ['Linux', 'Windows', 'macOS'];
 
 const PLATFORM_ICONS: Record<string, string> = {
-  Linux: '<img src="/icons/os-linux.svg" width="20" height="20" alt="Linux" style="display:inline-block;vertical-align:middle;"/>',
-  Windows: '<img src="/icons/os-windows.svg" width="20" height="20" alt="Windows" style="display:inline-block;vertical-align:middle;"/>',
-  macOS: '<img src="/icons/os-macos.svg" width="20" height="20" alt="macOS" style="display:inline-block;vertical-align:middle;"/>'
+  Linux:
+    '<img src="/icons/os-linux.svg" width="20" height="20" alt="Linux" style="display:inline-block;vertical-align:middle;"/>',
+  Windows:
+    '<img src="/icons/os-windows.svg" width="20" height="20" alt="Windows" style="display:inline-block;vertical-align:middle;"/>',
+  macOS:
+    '<img src="/icons/os-macos.svg" width="20" height="20" alt="macOS" style="display:inline-block;vertical-align:middle;"/>',
 };
 
 export function generateGuiTable(releaseInfo: ReleaseInfo): string {
-  const guiAssets = releaseInfo.assets.filter(asset =>
-    asset.downloadUrl.includes('eigenwallet_') || asset.type === 'instructions'
+  const guiAssets = releaseInfo.assets.filter(
+    asset =>
+      asset.downloadUrl.includes('eigenwallet_') ||
+      asset.type === 'instructions'
   );
 
   return generateTable(guiAssets);
 }
 
 export function generateCliTable(releaseInfo: ReleaseInfo): string {
-  const cliAssets = releaseInfo.assets.filter(asset =>
-    asset.downloadUrl.includes('asb_') ||
-    asset.downloadUrl.includes('swap_') ||
-    asset.downloadUrl.includes('orchestrator_') ||
-    asset.downloadUrl.includes('rendezvous-server_')
+  const cliAssets = releaseInfo.assets.filter(
+    asset =>
+      asset.downloadUrl.includes('asb_') ||
+      asset.downloadUrl.includes('swap_') ||
+      asset.downloadUrl.includes('orchestrator_') ||
+      asset.downloadUrl.includes('rendezvous-server_')
   );
 
   return generateTable(cliAssets);
@@ -278,28 +331,31 @@ export async function generateAurTable(): Promise<string> {
     },
     {
       name: 'eigenwallet-developertools-bin',
-      packageUrl: 'https://aur.archlinux.org/packages/eigenwallet-developertools-bin',
+      packageUrl:
+        'https://aur.archlinux.org/packages/eigenwallet-developertools-bin',
       maintainer: 'Kainoa Kanter (That1Calculator)',
       maintainerUrl: 'https://aur.archlinux.org/account/That1Calculator',
       architectures: ['x86_64'],
-    }
+    },
   ];
 
   const packagesWithVersions = await Promise.all(
-    aurPackages.map(async (pkg) => {
+    aurPackages.map(async pkg => {
       const version = await fetchAurPackageVersion(pkg.name);
       return { ...pkg, version };
     })
   );
 
-  const tableRows = packagesWithVersions.map(pkg => {
-    return `  <tr>
-    <td class="hide-mobile">${pkg.architectures.join(", ")}</td>
+  const tableRows = packagesWithVersions
+    .map(pkg => {
+      return `  <tr>
+    <td class="hide-mobile">${pkg.architectures.join(', ')}</td>
     <td><a href="${pkg.packageUrl}"><code>${pkg.name}</code></a></td>
     <td>${pkg.version}</td>
     <td><a href="${pkg.maintainerUrl}">${pkg.maintainer}</a></td>
   </tr>`;
-  }).join('\n');
+    })
+    .join('\n');
 
   return `<table>
   <thead>
@@ -327,7 +383,9 @@ async function fetchAurPackageVersion(packageName: string): Promise<string> {
   if (cached) return cached;
 
   try {
-    const response = await fetch(`https://aur.archlinux.org/rpc/v5/info?arg[]=${packageName}`);
+    const response = await fetchWithRetry(
+      `https://aur.archlinux.org/rpc/v5/info?arg[]=${packageName}`
+    );
     if (!response.ok) return 'N/A';
 
     const data = await response.json();
@@ -339,14 +397,19 @@ async function fetchAurPackageVersion(packageName: string): Promise<string> {
   }
 }
 
-function groupAssetsByPlatform(assets: DownloadAsset[]): Record<string, DownloadAsset[]> {
-  return assets.reduce((groups, asset) => {
-    if (!groups[asset.platform]) {
-      groups[asset.platform] = [];
-    }
-    groups[asset.platform].push(asset);
-    return groups;
-  }, {} as Record<string, DownloadAsset[]>);
+function groupAssetsByPlatform(
+  assets: DownloadAsset[]
+): Record<string, DownloadAsset[]> {
+  return assets.reduce(
+    (groups, asset) => {
+      if (!groups[asset.platform]) {
+        groups[asset.platform] = [];
+      }
+      groups[asset.platform].push(asset);
+      return groups;
+    },
+    {} as Record<string, DownloadAsset[]>
+  );
 }
 
 const DOWNLOAD_ICON = `<img src="/icons/download.svg" width="20" height="20" alt="Download" style="display:inline-block;vertical-align:middle;margin-left:0.5em;"/>`;
@@ -370,7 +433,12 @@ function createSignatureLink(signatureUrl: string): string {
 function getArchType(asset: DownloadAsset): 'x86_64' | 'arm64' | '' {
   const arch = asset.architecture.toLowerCase();
   if (arch.includes('intel') || arch.includes('x86_64')) return 'x86_64';
-  if (arch.includes('silicon') || arch.includes('arm64') || arch.includes('aarch64')) return 'arm64';
+  if (
+    arch.includes('silicon') ||
+    arch.includes('arm64') ||
+    arch.includes('aarch64')
+  )
+    return 'arm64';
   return '';
 }
 
@@ -389,7 +457,10 @@ function generateAssetRow(asset: DownloadAsset): string {
     </tr>`;
 }
 
-function generatePlatformSection(platform: string, assets: DownloadAsset[]): string {
+function generatePlatformSection(
+  platform: string,
+  assets: DownloadAsset[]
+): string {
   const icon = PLATFORM_ICONS[platform] ?? '';
   const assetRows = assets.map(generateAssetRow).join('');
 
