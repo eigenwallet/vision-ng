@@ -44,24 +44,24 @@ const sortedProviders = [...providers].sort((a, b) => {
           {offers.length > 0 ? (
             offers.map((offer) => (
               <div class="px-6 py-3 hover:bg-[#222] transition-colors">
-                <div class="flex items-baseline gap-2 text-[0.95rem] font-mono flex-wrap">
-                  <span class="inline-flex items-baseline min-w-[80px] justify-end">
-                    <span class="text-[#eee]">{btcToXmr(offer.minSwapAmount, offer.price)}</span>
-                    <span class="text-[#eee] ml-1">XMR</span>
-                  </span>
-                  <span class="text-[#666]">–</span>
-                  <span class="inline-flex items-baseline min-w-[90px]">
-                    <span class="text-[#f7a41d] font-medium">{btcToXmr(offer.maxSwapAmount, offer.price)}</span>
-                    <span class="text-[#f7a41d] ml-1">XMR</span>
-                  </span>
-                  <span class="text-gray-500 inline-flex items-baseline text-sm">
-                    <span>(</span>
-                    <span>{satoshisToBtc(offer.minSwapAmount)}</span>
-                    <span class="mx-1">–</span>
-                    <span>{satoshisToBtc(offer.maxSwapAmount)} BTC</span>
-                    <span>)</span>
-                  </span>
-                  <span class="text-gray-500 text-sm ml-auto">
+                <div class="flex items-center justify-between">
+                  <div class="flex flex-col gap-0.5">
+                    <div class="flex items-baseline gap-2 text-[0.95rem] font-mono">
+                      <span class="inline-flex items-baseline min-w-[80px] justify-end">
+                        <span class="text-[#eee]">{btcToXmr(offer.minSwapAmount, offer.price)}</span>
+                        <span class="text-[#eee] ml-1">XMR</span>
+                      </span>
+                      <span class="text-[#666]">–</span>
+                      <span class="inline-flex items-baseline min-w-[90px]">
+                        <span class="text-[#f7a41d] font-medium">{btcToXmr(offer.maxSwapAmount, offer.price)}</span>
+                        <span class="text-[#f7a41d] ml-1">XMR</span>
+                      </span>
+                    </div>
+                    <div class="text-gray-500 text-sm font-mono">
+                      ({satoshisToBtc(offer.minSwapAmount)} – {satoshisToBtc(offer.maxSwapAmount)} BTC)
+                    </div>
+                  </div>
+                  <span class="text-gray-500 text-sm">
                     @ {formatPrice(offer.price)} BTC/XMR
                   </span>
                 </div>
@@ -74,7 +74,7 @@ const sortedProviders = [...providers].sort((a, b) => {
           )}
         </div>
         <div class="border-t border-[#333] py-2 text-center">
-          <span class="text-sm font-medium text-[#eee]">Offers</span>
+          <span class="text-sm font-medium text-[#eee]">Offers (Selling XMR for BTC)</span>
         </div>
       </div>
     </div>
