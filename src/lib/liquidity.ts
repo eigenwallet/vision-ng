@@ -2,14 +2,16 @@ import * as vega from 'vega';
 import * as vl from 'vega-lite';
 import { getCache, setCache } from './cache';
 
-const LIQUIDITY_DAILY_API_URL = 'https://api.unstoppableswap.net/api/liquidity-daily';
-const LIST_API_URL = 'https://api.unstoppableswap.net/api/list';
-const PROVIDER_QUOTE_STATS_API_URL = 'https://api.unstoppableswap.net/api/provider-quote-stats';
-const PROVIDER_DAILY_SWAP_BOUNDS_API_URL = 'https://api.unstoppableswap.net/api/provider-daily-swap-bounds';
+const LIQUIDITY_DAILY_API_URL = 'https://api.eigenwallet.org/api/liquidity-daily';
+const LIST_API_URL = 'https://api.eigenwallet.org/api/list';
+const PROVIDER_QUOTE_STATS_API_URL = 'https://api.eigenwallet.org/api/provider-quote-stats';
+const PROVIDER_DAILY_SWAP_BOUNDS_API_URL = 'https://api.eigenwallet.org/api/provider-daily-swap-bounds';
+const DAILY_PRICE_STATS_API_URL = 'https://api.eigenwallet.org/api/daily-price-stats';
 const CACHE_KEY = 'liquidity-daily';
 const OFFERS_CACHE_KEY = 'offers-list';
 const PROVIDERS_CACHE_KEY = 'provider-quote-stats';
 const PROVIDER_BOUNDS_CACHE_KEY = 'provider-daily-swap-bounds';
+const PRICE_STATS_CACHE_KEY = 'daily-price-stats';
 
 const FALLBACK_SVG = `<svg viewBox="0 0 800 200" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto; display:block;">
   <text x="400" y="100" text-anchor="middle" fill="#666">No data available</text>
@@ -48,6 +50,17 @@ export interface ProviderDailySwapBounds {
   peer_id: string;
   daily_max_max_swap_amount: number; // in satoshis
   daily_min_min_swap_amount: number; // in satoshis
+}
+
+export interface DailyPriceStats {
+  date: number[]; // [year, day_of_year]
+  lowest_price: number; // satoshis per XMR
+  highest_price: number; // satoshis per XMR
+  avg_price: number; // satoshis per XMR
+}
+
+export interface PriceChartData {
+  chartSvg: string;
 }
 
 const SATOSHIS_PER_BTC = 100000000;
@@ -438,4 +451,148 @@ export async function generateProviderChart(peerId: string): Promise<string> {
       <text x="400" y="100" text-anchor="middle" fill="#666">Chart generation failed</text>
     </svg>`;
   }
+}
+
+/**
+ * Fetch daily price stats from API with caching
+ */
+async function fetchDailyPriceStats(): Promise<DailyPriceStats[] | null> {
+  const cached = getCache<DailyPriceStats[]>(PRICE_STATS_CACHE_KEY);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    console.log('Fetching daily price stats from API...');
+    const response = await fetch(DAILY_PRICE_STATS_API_URL);
+    
+    if (!response.ok) {
+      console.warn(`Daily price stats API responded with status: ${response.status}`);
+      return null;
+    }
+
+    const data: DailyPriceStats[] = await response.json();
+    setCache(PRICE_STATS_CACHE_KEY, data);
+    return data;
+  } catch (error) {
+    console.warn('Failed to fetch daily price stats:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate SVG chart for best daily price (lowest price = best rate for BTC→XMR)
+ */
+async function generateBestPriceChart(priceData: DailyPriceStats[]): Promise<string> {
+  if (priceData.length === 0) {
+    return FALLBACK_SVG;
+  }
+
+  // Filter out entries with avg_price of 0 (invalid data)
+  const validData = priceData.filter(d => d.avg_price > 0);
+  
+  if (validData.length === 0) {
+    return FALLBACK_SVG;
+  }
+
+  // Transform data for Vega-Lite
+  const chartData = validData.map(d => {
+    const year = d.date[0];
+    const dayOfYear = d.date[1];
+    const date = new Date(year, 0, dayOfYear);
+    
+    return {
+      date: date.toISOString().split('T')[0],
+      avgPrice: d.avg_price / SATOSHIS_PER_BTC // Convert to BTC per XMR
+    };
+  }).reverse(); // Show chronological order (oldest to newest)
+
+  const spec: vl.TopLevelSpec = {
+    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+    width: 750,
+    height: 400,
+    background: 'transparent',
+    padding: { left: 0, right: 0, top: 0, bottom: 0 },
+    data: { values: chartData },
+    layer: [
+      // Area fill
+      {
+        mark: {
+          type: 'area',
+          color: '#22c55e',
+          opacity: 0.15,
+          line: false
+        },
+        encoding: {
+          x: {
+            title: null,
+            field: 'date',
+            type: 'temporal',
+            axis: {
+              format: '%b %d',
+              labelAngle: 0,
+              labelFontSize: 14,
+              labelColor: '#666',
+              tickColor: 'transparent',
+              domainColor: 'transparent',
+              grid: false
+            }
+          },
+          y: {
+            title: null,
+            field: 'avgPrice',
+            type: 'quantitative',
+            axis: {
+              labelFontSize: 14,
+              labelColor: '#666',
+              tickColor: 'transparent',
+              domainColor: 'transparent',
+              grid: false,
+              labelExpr: 'format(datum.value, ".6f") + " BTC"'
+            }
+          }
+        }
+      },
+      // Line
+      {
+        mark: {
+          type: 'line',
+          color: '#22c55e',
+          strokeWidth: 2,
+          strokeCap: 'round',
+          strokeJoin: 'round'
+        },
+        encoding: {
+          x: { field: 'date', type: 'temporal' },
+          y: { field: 'avgPrice', type: 'quantitative' }
+        }
+      }
+    ]
+  };
+
+  try {
+    const vegaSpec = vl.compile(spec).spec;
+    const view = new vega.View(vega.parse(vegaSpec), { renderer: 'none' });
+    const svg = await view.toSVG();
+    // Remove fixed width/height and make responsive using viewBox
+    return svg
+      .replace(/\s*width="[^"]*"/, '')
+      .replace(/\s*height="[^"]*"/, '')
+      .replace('<svg', '<svg style="width: 100%; height: auto; display: block;"');
+  } catch (error) {
+    console.error('Failed to generate best price chart:', error);
+    return FALLBACK_SVG;
+  }
+}
+
+/**
+ * Get best daily price chart SVG
+ */
+export async function getBestPriceData(): Promise<PriceChartData> {
+  const priceData = await fetchDailyPriceStats();
+  const chartSvg = priceData 
+    ? await generateBestPriceChart(priceData)
+    : FALLBACK_SVG;
+
+  return { chartSvg };
 }

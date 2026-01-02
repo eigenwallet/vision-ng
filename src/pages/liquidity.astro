@@ -1,8 +1,9 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getLiquidityData, fetchOffers, fetchProviderStats, satoshisToBtc, btcToXmr, formatPrice, formatDaysAgo } from '../lib/liquidity';
+import { getLiquidityData, getBestPriceData, fetchOffers, fetchProviderStats, satoshisToBtc, btcToXmr, formatPrice, formatDaysAgo } from '../lib/liquidity';
 
 const { chartSvg } = await getLiquidityData();
+const { chartSvg: priceChartSvg } = await getBestPriceData();
 const offers = await fetchOffers();
 const providers = await fetchProviderStats();
 
@@ -37,6 +38,22 @@ const sortedProviders = [...providers].sort((a, b) => {
       </div>
     </div>
 
+    <!-- Best Price Chart -->
+    <div class="flex-1 min-w-0">
+      <div class="border border-[#333] bg-[#1e1e1e] h-full flex flex-col">
+        <div class="p-4 flex-1">
+          <div class="chart-responsive">
+            <Fragment set:html={priceChartSvg} />
+          </div>
+        </div>
+        <div class="border-t border-[#333] py-2 text-center">
+          <span class="text-sm font-medium text-[#eee]">Average Daily Price (BTC/XMR)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-col lg:flex-row gap-6 mb-12">
     <!-- Current Offers -->
     <div class="flex-1 min-w-0">
       <div class="border border-[#333] bg-[#1e1e1e] h-full flex flex-col">

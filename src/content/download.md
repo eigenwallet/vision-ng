@@ -26,4 +26,4 @@ Allows you to store, send and receive Monero in a non-custodial way. It is a ful
 
 {{GUI_TABLE}}
 
-_The release was published on {{RELEASE_DATE}}._ [_How do I verify signatures?_](https://docs.unstoppableswap.net/getting_started/verify_tauri_signature)
+_The release was published on {{RELEASE_DATE}}._ [_How do I verify signatures?_](https://docs.eigenwallet.org/getting_started/verify_tauri_signature)
