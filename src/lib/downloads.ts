@@ -99,7 +99,7 @@ function createSpecialInstallMethods(): DownloadAsset[] {
     },
     {
       name: 'AUR',
-      downloadUrl: '/download#aur',
+      downloadUrl: 'https://aur.archlinux.org/packages/eigenwallet-bin',
       signatureUrl: '',
       size: '',
       architecture: "x86_64 <span style='float: right;'>AUR</span>",
