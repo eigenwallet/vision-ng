@@ -22,7 +22,7 @@
 
 ## Eigenwallet (v{{LATEST_VERSION}})
 
-Allows you to store, send and receive Monero in a non-custodial way. It is a fully fledged Monero wallet and can serve as an alternative to Feather Wallet. It has built-in support for exchanging Bitcoin $\rightarrow$ Monero using Atomic Swaps. Comes bundled with Tor.
+Allows you to store, send and receive Monero in a non-custodial way. It is a fully fledged Monero wallet and can serve as an alternative to Feather Wallet. It has built-in support for exchanging Bitcoin → Monero using Atomic Swaps. Comes bundled with Tor.
 
 {{GUI_TABLE}}
 
