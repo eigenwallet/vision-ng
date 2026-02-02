@@ -4,8 +4,8 @@ import { getLiquidityData, getBestPriceData, fetchOffers, fetchProviderStats, sa
 
 const { chartSvg } = await getLiquidityData();
 const { chartSvg: priceChartSvg } = await getBestPriceData();
-const offers = await fetchOffers();
-const providers = await fetchProviderStats();
+const offers = await fetchOffers() ?? [];
+const providers = await fetchProviderStats() ?? [];
 
 // Sort providers: by last seen (ascending), then by online days when both are "Recently"
 const sortedProviders = [...providers].sort((a, b) => {
