@@ -20,33 +20,6 @@ const { title, description = "eigenwallet - The Monero wallet for the future" } 
     <title>{title}</title>
   </head>
   <body class="min-h-screen flex flex-col">
-    <!-- Monerotopia Banner -->
-    <div id="monerotopia-banner" class="bg-[#2d6b4f] text-white py-2 px-4 text-center relative font-sans hidden">
-      <a href="https://monerotopia.com/" target="_blank" class="font-medium hover:underline text-[#f7a41d]">Meet us at Monerotopia 2026!</a>
-      <button
-        id="close-banner"
-        class="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors p-1 cursor-pointer"
-        aria-label="Close banner"
-      >
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
-        </svg>
-      </button>
-    </div>
-    <script>
-      const banner = document.getElementById('monerotopia-banner');
-      const closeBtn = document.getElementById('close-banner');
-
-      if (!localStorage.getItem('monerotopia-banner-closed')) {
-        banner?.classList.remove('hidden');
-      }
-
-      closeBtn?.addEventListener('click', () => {
-        banner?.classList.add('hidden');
-        localStorage.setItem('monerotopia-banner-closed', 'true');
-      });
-    </script>
-
     <header class="flex flex-col mb-8 font-sans">
       <div class="bg-[#111111]">
         <div class="max-w-[1200px] mx-auto px-4 w-full">
