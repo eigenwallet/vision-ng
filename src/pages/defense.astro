@@ -9,11 +9,7 @@ const MONERO_ADDRESS = '85EcePtnegBdhm6edVSvG3EjycyiedXfBJwUFyQjA3XbEvAxa2u5bXSV
 // and is left out of production builds.
 const SIGNED_MESSAGE = ``;
 
-const UNSIGNED_PREVIEW = `The eigenwallet developers are setting up a Defense Fund. Its Monero donation address is:
-
-${MONERO_ADDRESS}
-
-Signed by binarybaron (core developer)`;
+const UNSIGNED_PREVIEW = `I confirm we are setting up a Defense Fund under the Monero address ${MONERO_ADDRESS}.`;
 
 const showSignedProof = SIGNED_MESSAGE !== '' || import.meta.env.DEV;
 ---
