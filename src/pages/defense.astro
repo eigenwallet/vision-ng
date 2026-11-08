@@ -1,0 +1,72 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const MONERO_ADDRESS = '85EcePtnegBdhm6edVSvG3EjycyiedXfBJwUFyQjA3XbEvAxa2u5bXSVPPMBY8kj127yGbAsVHgGGgL3RsLyYqVR4pTbVfT';
+---
+
+<Layout
+  title="Defense Fund — eigenwallet"
+  description="Support eigenwallet's security work. Donate Monero to help us strengthen our defenses."
+>
+  <article class="max-w-4xl mx-auto py-8">
+    <h2 class="text-3xl font-bold text-[#eee] mb-6">Defense Fund</h2>
+
+    <p class="text-[#bbb] mb-4">
+      Users entrust eigenwallet with real amounts of money, and we already do everything we can to prevent security issues upfront, in a number of ways. But LLMs and their new cybersecurity capabilities have widened the threats we face. That is why we are asking for your support in strengthening our defenses.
+    </p>
+
+    <p class="text-[#bbb] mb-4">
+      To uphold our very high standard of security, we run large-scale, preemptive investigations using a variety of tactics, including custom-built harnesses, fuzzing systems and simulations. For this to work, we need a lot of tokens, and the more tokens, the better.
+    </p>
+
+    <p class="text-[#bbb] mb-4">
+      We have access to the cybersecurity-enabled frontier models, and we use a combination of closed-source and open-source models to find vulnerabilities before anyone else does. If you are skeptical that this is useful, please read <a href="https://daniel.haxx.se/blog/2025/10/10/a-new-breed-of-analyzers/" target="_blank" class="text-[#f7a41d] hover:underline">this blog article by the curl maintainer</a>.
+    </p>
+
+    <p class="text-[#bbb] mb-4">
+      These systems are run by contributors who have been working on the project for four years. Any vulnerabilities they find are disclosed and fixed in a responsible manner, to minimize the risk of them being exploited or causing major disruption to the market.
+    </p>
+
+    <h4 class="text-xl font-bold text-[#eee] mt-8 mb-4">Transparency</h4>
+
+    <p class="text-[#bbb] mb-4">
+      We will be transparent about how much the Defense Fund receives, how the funds are used, and how many vulnerabilities we find, if any. Details of each vulnerability will be published once it has been responsibly disclosed.
+    </p>
+
+    <h4 class="text-xl font-bold text-[#eee] mt-8 mb-4">Donate</h4>
+
+    <p class="text-[#bbb] mb-4">
+      Donations to the Defense Fund pay only for the tokens these systems use to discover vulnerabilities. They are not used for anything else.
+    </p>
+
+    <p class="text-[#bbb] mb-4 inline-flex items-center flex-wrap gap-1">
+      Send Monero <img src="/imgs/icons/Monero.svg" alt="Monero" class="h-[1em] mx-0.5" /> here to fund tokens for preemptive vulnerability discovery:
+    </p>
+
+    <div class="border border-[#444] bg-[#1a1a1a] p-4 mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
+      <code id="defense-fund-address" class="flex-1 text-[#f7a41d] text-sm break-all font-mono">{MONERO_ADDRESS}</code>
+      <button
+        id="copy-address"
+        type="button"
+        class="shrink-0 bg-[#f7a41d] hover:bg-[#ffb732] text-black font-bold py-2 px-4 transition-colors"
+      >
+        Copy
+      </button>
+    </div>
+  </article>
+
+  <script>
+    const button = document.getElementById('copy-address');
+    const address = document.getElementById('defense-fund-address');
+    button?.addEventListener('click', async () => {
+      if (!address?.textContent) return;
+      try {
+        await navigator.clipboard.writeText(address.textContent.trim());
+        button.textContent = 'Copied';
+      } catch {
+        button.textContent = 'Copy failed';
+      }
+      setTimeout(() => (button.textContent = 'Copy'), 2000);
+    });
+  </script>
+</Layout>
