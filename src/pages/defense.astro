@@ -3,15 +3,20 @@ import Layout from '../layouts/Layout.astro';
 
 const MONERO_ADDRESS = '85EcePtnegBdhm6edVSvG3EjycyiedXfBJwUFyQjA3XbEvAxa2u5bXSVPPMBY8kj127yGbAsVHgGGgL3RsLyYqVR4pTbVfT';
 
-// Paste the full output of `gpg --clearsign` here (everything from
-// -----BEGIN PGP SIGNED MESSAGE----- to -----END PGP SIGNATURE-----).
-// While empty, the section only shows an unsigned preview in `pnpm dev`
-// and is left out of production builds.
-const SIGNED_MESSAGE = ``;
+// Clearsigned by Einliterflasche (key 10A9572D8099309434A126D490676A9B07184BC9),
+// posted on https://github.com/eigenwallet/vision-ng/pull/4
+const SIGNED_MESSAGE = `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
 
-const UNSIGNED_PREVIEW = `I confirm we are setting up a Defense Fund under the Monero address ${MONERO_ADDRESS}.`;
+I confirm we are setting up a Defense Fund under the Monero address 85EcePtnegBdhm6edVSvG3EjycyiedXfBJwUFyQjA3XbEvAxa2u5bXSVPPMBY8kj127yGbAsVHgGGgL3RsLyYqVR4pTbVfT.
+-----BEGIN PGP SIGNATURE-----
 
-const showSignedProof = SIGNED_MESSAGE !== '' || import.meta.env.DEV;
+iJEEARYKADkWIQQQqVctgJkwlDShJtSQZ2qbBxhLyQUCau/wHhsUgAAAAAAEAA5t
+YW51MiwyLjUrMS4xMiwwLDMACgkQkGdqmwcYS8nL1gD7B1JaUkgXNYhaEYCRQTdF
+P/juwCHWGrBGrlmHH2NlTe4A/AvDCIcFLvyMLLPoN9Y9qp/XmePd3w6m8kVnfa+N
+AFUA
+=tAtn
+-----END PGP SIGNATURE-----`;
 ---
 
 <Layout
@@ -68,21 +73,13 @@ const showSignedProof = SIGNED_MESSAGE !== '' || import.meta.env.DEV;
       </button>
     </div>
 
-    {showSignedProof && (
-      <>
-        <h4 class="text-xl font-bold text-[#eee] mt-8 mb-4">Signed proof</h4>
+    <h4 class="text-xl font-bold text-[#eee] mt-8 mb-4">Signed proof</h4>
 
-        <p class="text-[#bbb] mb-4">
-          Below is a PGP-signed message confirming that this is the Defense Fund address.
-        </p>
+    <p class="text-[#bbb] mb-4">
+      Below is a message signed by <a href="https://github.com/Einliterflasche" target="_blank" class="text-[#f7a41d] hover:underline"><em>Einliterflasche</em></a> with the PGP key <code class="text-[#f7a41d] bg-[#222] px-1 rounded break-all">10A9572D8099309434A126D490676A9B07184BC9</code>, confirming that this is the Defense Fund address.
+    </p>
 
-        {SIGNED_MESSAGE === '' && (
-          <p class="text-red-400 text-sm mb-2">Unsigned preview, only visible in dev. Paste the signed message into SIGNED_MESSAGE.</p>
-        )}
-
-        <pre class="bg-[#222] p-4 rounded overflow-auto text-sm text-[#bbb] mb-6 whitespace-pre-wrap break-all"><code>{SIGNED_MESSAGE || UNSIGNED_PREVIEW}</code></pre>
-      </>
-    )}
+    <pre class="bg-[#222] p-4 rounded overflow-auto text-sm text-[#bbb] mb-6 whitespace-pre-wrap break-all"><code>{SIGNED_MESSAGE}</code></pre>
   </article>
 
   <script>
