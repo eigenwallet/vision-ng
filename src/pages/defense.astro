@@ -2,6 +2,20 @@
 import Layout from '../layouts/Layout.astro';
 
 const MONERO_ADDRESS = '85EcePtnegBdhm6edVSvG3EjycyiedXfBJwUFyQjA3XbEvAxa2u5bXSVPPMBY8kj127yGbAsVHgGGgL3RsLyYqVR4pTbVfT';
+
+// Paste the full output of `gpg --clearsign` here (everything from
+// -----BEGIN PGP SIGNED MESSAGE----- to -----END PGP SIGNATURE-----).
+// While empty, the section only shows an unsigned preview in `pnpm dev`
+// and is left out of production builds.
+const SIGNED_MESSAGE = ``;
+
+const UNSIGNED_PREVIEW = `The eigenwallet developers are setting up a Defense Fund. Its Monero donation address is:
+
+${MONERO_ADDRESS}
+
+Signed by binarybaron (core developer)`;
+
+const showSignedProof = SIGNED_MESSAGE !== '' || import.meta.env.DEV;
 ---
 
 <Layout
@@ -12,7 +26,7 @@ const MONERO_ADDRESS = '85EcePtnegBdhm6edVSvG3EjycyiedXfBJwUFyQjA3XbEvAxa2u5bXSV
     <h2 class="text-3xl font-bold text-[#eee] mb-6">Defense Fund</h2>
 
     <p class="text-[#bbb] mb-4">
-      Users entrust eigenwallet with real amounts of money, and we already do everything we can to prevent security issues upfront, in a number of ways. But LLMs and their new cybersecurity capabilities have widened the threats we face. That is why we are asking for your support in strengthening our defenses.
+      Users entrust eigenwallet with their money, and we already do everything we can to prevent security issues upfront, in a number of ways. But LLMs and their new cybersecurity capabilities have widened the threats we face. That is why we are asking for your support in strengthening our defenses.
     </p>
 
     <p class="text-[#bbb] mb-4">
@@ -57,6 +71,22 @@ const MONERO_ADDRESS = '85EcePtnegBdhm6edVSvG3EjycyiedXfBJwUFyQjA3XbEvAxa2u5bXSV
         Copy
       </button>
     </div>
+
+    {showSignedProof && (
+      <>
+        <h4 class="text-xl font-bold text-[#eee] mt-8 mb-4">Signed proof</h4>
+
+        <p class="text-[#bbb] mb-4">
+          Below is a PGP-signed message confirming that this is the Defense Fund address.
+        </p>
+
+        {SIGNED_MESSAGE === '' && (
+          <p class="text-red-400 text-sm mb-2">Unsigned preview, only visible in dev. Paste the signed message into SIGNED_MESSAGE.</p>
+        )}
+
+        <pre class="bg-[#222] p-4 rounded overflow-auto text-sm text-[#bbb] mb-6 whitespace-pre-wrap break-all"><code>{SIGNED_MESSAGE || UNSIGNED_PREVIEW}</code></pre>
+      </>
+    )}
   </article>
 
   <script>
