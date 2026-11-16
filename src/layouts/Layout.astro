@@ -21,13 +21,6 @@ const { title, description = "eigenwallet - The Monero wallet for the future" } 
   </head>
   <body class="min-h-screen flex flex-col">
     <header class="flex flex-col mb-8 font-sans">
-      <div class="bg-[#f7a41d] text-black">
-        <div class="max-w-[1200px] mx-auto px-4 py-2 w-full text-center text-[0.95rem]">
-          <strong>We have applied for Monero community funding (CCS).</strong><br />
-          Please <a href="https://repo.getmonero.org/monero-project/ccs-proposals/-/merge_requests/709" target="_blank" class="text-black font-bold underline hover:no-underline">voice your support or opinion on our proposal</a>.
-          You need to create a GitLab account on repo.getmonero.org to comment.
-        </div>
-      </div>
       <div class="bg-[#111111]">
         <div class="max-w-[1200px] mx-auto px-4 w-full">
           <a href="/" class="flex items-center gap-3 no-underline hover:opacity-90 transition-opacity py-4">
@@ -112,6 +105,16 @@ const { title, description = "eigenwallet - The Monero wallet for the future" } 
           </div>
         </div>
       </div>
+
+      {Astro.url.pathname === '/' && (
+        <div class="bg-[#1a1a1a] border-b border-[#444] text-[#bbb]">
+          <div class="max-w-[1200px] mx-auto px-4 py-2 w-full text-center text-sm">
+            <strong class="text-[#eee]">We have applied for Monero community funding (CCS).</strong><br />
+            It would mean a lot to us if you <a href="https://repo.getmonero.org/monero-project/ccs-proposals/-/merge_requests/709" target="_blank" class="text-[#f7a41d] hover:underline">voiced your support or opinion on our proposal</a>!<br />
+            You need to create a GitLab account on repo.getmonero.org to comment.
+          </div>
+        </div>
+      )}
     </header>
 
     <main class="flex-1" style="max-width: 1200px; margin: 0 auto; padding: 0 1rem; width: 100%; box-sizing: border-box;">
