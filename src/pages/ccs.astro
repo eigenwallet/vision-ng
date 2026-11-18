@@ -24,6 +24,8 @@ const AUTHOR_GITHUB: Record<string, string> = {
 const authorParts = proposal ? proposal.authors.split(/(,\s*|\s+and\s+)/) : [];
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
 const commentUrl = `${CCS_MR_URL}#note_form`;
+const X_POST_ID = '2123109177312624867';
+const X_POST_URL = `https://x.com/eigenwallet/status/${X_POST_ID}`;
 ---
 
 <Layout
@@ -32,7 +34,7 @@ const commentUrl = `${CCS_MR_URL}#note_form`;
 >
   <div class="ccs">
     <!-- One centred column. The contents list opens from a button in the corner. -->
-    <header class="ccs-row">
+    <header class="ccs-head">
       <div class="ccs-column">
         <h1 class="ccs-title">{proposal ? proposal.title : 'Our CCS proposal'}</h1>
 
@@ -62,6 +64,15 @@ const commentUrl = `${CCS_MR_URL}#note_form`;
           <a href="#discussion" class="ccs-button ccs-button-quiet">View comments</a>
         </p>
       </div>
+      <figure class="ccs-video">
+        <a href={X_POST_URL} target="_blank" rel="noopener noreferrer" data-post={X_POST_ID} aria-label="Play the video: what we have been up to this last year">
+          <img src="/imgs/ccs-video.jpg" alt="" width="1280" height="720" />
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+        </a>
+        <p class="ccs-action">
+          <a href={`https://x.com/intent/tweet?in_reply_to=${X_POST_ID}`} target="_blank" rel="noopener noreferrer" class="ccs-button ccs-button-quiet">Comment on X</a>
+        </p>
+      </figure>
     </header>
 
     {proposal && (
@@ -195,6 +206,28 @@ const commentUrl = `${CCS_MR_URL}#note_form`;
     markCurrentSection();
   }
 
+  // The post with the video is embedded on click, so that X gets no request before that.
+  // Without JavaScript, or when the embed script does not load, the link opens the post on X.
+  document.querySelector<HTMLAnchorElement>('.ccs-video a[data-post]')?.addEventListener(
+    'click',
+    (event) => {
+      event.preventDefault();
+      const link = event.currentTarget as HTMLAnchorElement;
+      const script = document.createElement('script');
+      script.src = 'https://platform.twitter.com/widgets.js';
+      script.onerror = () => location.assign(link.href);
+      script.onload = () => {
+        (window as any).twttr.ready((twttr: any) => {
+          const holder = document.createElement('div');
+          link.replaceWith(holder);
+          twttr.widgets.createTweet(link.dataset.post, holder, { theme: 'dark', dnt: true, conversation: 'none' });
+        });
+      };
+      document.head.append(script);
+    },
+    { once: true },
+  );
+
   // Long comments start collapsed. Without JavaScript they are shown in full.
   const COLLAPSED_LINES = 15;
   // A comment that is only a few lines longer than the limit is not worth collapsing.
@@ -249,7 +282,38 @@ const commentUrl = `${CCS_MR_URL}#note_form`;
   /* One centred column for the whole page */
   .ccs-row { max-width: var(--ccs-measure); margin-inline: auto; }
 
-  /* Head of the document */
+  /* Head of the document: title and buttons, with the video beside them on wide screens */
+  .ccs-head { display: grid; gap: 2rem; max-width: var(--ccs-measure); margin-inline: auto; }
+  @media (min-width: 1024px) {
+    .ccs-head { grid-template-columns: minmax(0, 1fr) 26rem; align-items: start; gap: 3rem; max-width: none; }
+  }
+  .ccs-video { margin: 0; }
+  .ccs-video > a {
+    display: block;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--ccs-line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+  }
+  .ccs-video img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .ccs-video svg {
+    position: absolute;
+    inset: 0;
+    width: 3.5rem;
+    height: 3.5rem;
+    margin: auto;
+    padding: 0.85rem;
+    border-radius: 6px;
+    background: var(--ccs-accent);
+    color: #000;
+    transition: background-color 0.15s ease-out;
+  }
+  .ccs-video > a:hover svg { background: #ffb732; }
+  .ccs-video .ccs-action { margin-top: 1rem; }
+
   .ccs-title {
     margin: 0 0 1rem;
     color: #fff;
@@ -285,7 +349,7 @@ const commentUrl = `${CCS_MR_URL}#note_form`;
   .ccs a.ccs-button-quiet:active { background: #1a1a1a; }
 
   /* Rendered markdown. Text, figures and tables all keep the one column, so nothing hangs out of it. */
-  .ccs-row + .ccs-row, .ccs section { margin-top: 3.5rem; }
+  .ccs-head + .ccs-row, .ccs-row + .ccs-row, .ccs section { margin-top: 3.5rem; }
   .ccs-prose { line-height: 1.7; overflow-wrap: break-word; }
   .ccs-prose > :first-child { margin-top: 0; }
   .ccs-prose > :last-child { margin-bottom: 0; }
