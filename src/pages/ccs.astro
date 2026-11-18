@@ -24,19 +24,21 @@ const AUTHOR_GITHUB: Record<string, string> = {
 const authorParts = proposal ? proposal.authors.split(/(,\s*|\s+and\s+)/) : [];
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
 const commentUrl = `${CCS_MR_URL}#note_form`;
+// The site already names the project, so the page title leaves the prefix out.
+const title = proposal?.title.replace(/^Eigenwallet:\s*/i, '');
 const X_POST_ID = '2123109177312624867';
 const X_POST_URL = `https://x.com/eigenwallet/status/${X_POST_ID}`;
 ---
 
 <Layout
-  title={proposal ? `${proposal.title} — eigenwallet CCS proposal` : 'CCS proposal — eigenwallet'}
+  title={title ? `${title} — eigenwallet CCS proposal` : 'CCS proposal — eigenwallet'}
   description="Our proposal for Monero community funding (CCS), with the full text and the discussion around it."
 >
   <div class="ccs">
     <!-- One centred column. The contents list opens from a button in the corner. -->
     <header class="ccs-head">
       <div class="ccs-column">
-        <h1 class="ccs-title">{proposal ? proposal.title : 'Our CCS proposal'}</h1>
+        <h1 class="ccs-title">{title ?? 'Our CCS proposal'}</h1>
 
         {proposal ? (
           <>
