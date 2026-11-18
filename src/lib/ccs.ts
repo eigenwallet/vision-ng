@@ -18,11 +18,9 @@ export interface TocEntry {
 export interface CcsProposal {
   title: string;
   authors: string;
-  date: string;
   amount: number | null;
   state: 'opened' | 'merged' | 'closed' | string;
   createdAt: string;
-  updatedAt: string;
   html: string;
   toc: TocEntry[];
 }
@@ -44,14 +42,12 @@ export interface CcsThread {
 export interface CcsData {
   proposal: CcsProposal | null;
   threads: CcsThread[] | null;
-  fetchedAt: string;
 }
 
 interface RawCcsData {
   mr: any | null;
   proposalFile: string | null;
   discussions: any[] | null;
-  fetchedAt: string;
 }
 
 async function fetchJson(url: string): Promise<{ data: any; headers: Headers }> {
@@ -118,7 +114,6 @@ async function fetchRaw(): Promise<RawCcsData> {
     mr: proposal.status === 'fulfilled' ? proposal.value.mr : null,
     proposalFile: proposal.status === 'fulfilled' ? proposal.value.proposalFile : null,
     discussions: discussions.status === 'fulfilled' ? discussions.value : null,
-    fetchedAt: new Date().toISOString(),
   };
   if (raw.mr && raw.discussions) setCache(cacheKey, raw);
   return raw;
@@ -232,7 +227,6 @@ function parseProposalFile(file: string) {
   return {
     title: field('title'),
     authors: field('author'),
-    date: field('date'),
     amount: Number.isFinite(amount) ? amount : null,
     body,
   };
@@ -248,11 +242,9 @@ export async function getCcsData(): Promise<CcsData> {
     proposal = {
       title: parsed.title ?? raw.mr.title,
       authors: parsed.authors ?? raw.mr.author.name,
-      date: parsed.date ?? '',
       amount: parsed.amount,
       state: raw.mr.state,
       createdAt: raw.mr.created_at,
-      updatedAt: raw.mr.updated_at,
       html,
       toc,
     };
@@ -283,5 +275,5 @@ export async function getCcsData(): Promise<CcsData> {
       .filter((thread: CcsThread) => thread.comments.length > 0);
   }
 
-  return { proposal, threads, fetchedAt: raw.fetchedAt };
+  return { proposal, threads };
 }
