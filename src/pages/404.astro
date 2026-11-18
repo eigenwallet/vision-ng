@@ -1,0 +1,17 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Page not found — eigenwallet">
+  <!-- GitHub Pages is case-sensitive. All routes are lowercase, so try the lowercase address once. -->
+  <script is:inline>
+    const lower = location.pathname.toLowerCase();
+    if (lower !== location.pathname) location.replace(lower + location.search + location.hash);
+  </script>
+  <article class="max-w-4xl mx-auto py-8">
+    <h2 class="text-3xl font-bold text-[#eee] mb-6">Page not found</h2>
+    <p class="text-[#bbb] mb-4">
+      There is no page at this address. <a href="/" class="text-[#f7a41d] hover:underline">Go to the home page.</a>
+    </p>
+  </article>
+</Layout>

@@ -16,7 +16,7 @@ const formatDateTime = (iso: string) => `${dateTimeFormat.format(new Date(iso))}
 
 const comments: CcsComment[] = threads?.flatMap((thread) => thread.comments) ?? [];
 const people = new Set(comments.map((comment) => comment.author.username)).size;
-// The proposal names its authors by handle ("binarybaron and einliterflasche"); each handle links to its GitHub profile.
+// The proposal names its authors by handle. Each known handle links to its GitHub profile.
 const AUTHOR_GITHUB: Record<string, string> = {
   binarybaron: 'https://github.com/binarybaron',
   einliterflasche: 'https://github.com/Einliterflasche',
@@ -226,10 +226,6 @@ const commentUrl = `${CCS_MR_URL}#note_form`;
 </script>
 
 <style is:global>
-  @media (prefers-reduced-motion: no-preference) {
-    html { scroll-behavior: smooth; }
-  }
-
   /* Colours are the ones the rest of the site uses. Orange is for links and the one action. */
   .ccs {
     --ccs-accent: #f7a41d;
@@ -270,11 +266,8 @@ const commentUrl = `${CCS_MR_URL}#note_form`;
   .ccs-action {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
     gap: 0.75rem 1.25rem;
     margin: 1.5rem 0 0;
-    color: var(--ccs-quiet);
-    font-size: 0.875rem;
   }
   .ccs a.ccs-button {
     padding: 0.6rem 1.1rem;
@@ -331,7 +324,7 @@ const commentUrl = `${CCS_MR_URL}#note_form`;
   .ccs-quiet { color: var(--ccs-quiet); }
 
   /* Discussion: byline above each comment */
-  .ccs-thread { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--ccs-line); }
+  .ccs-thread { max-width: var(--ccs-measure); margin: 2rem auto 0; padding-top: 2rem; border-top: 1px solid var(--ccs-line); }
   .ccs .ccs-thread .ccs-row { margin-top: 0; }
   .ccs-byline {
     display: flex;
